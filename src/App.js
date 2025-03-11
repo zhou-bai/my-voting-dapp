@@ -5,22 +5,27 @@ import VotingABI from './abis/Voting.json';
 import './App.css';
 
 function App() {
-  const [contract, setContract] = useState(null);
-  const [candidates] = useState(3);
-  const [selected, setSelected] = useState(0);
-  const [results, setResults] = useState([]);
-  const [votingEnded, setVotingEnded] = useState(false);
-  const [currentAccount, setCurrentAccount] = useState(''); // 新增当前账户状态
+  const [contract, setContract] = useState(null); // 合约实例
+  const [candidates] = useState(3); // 候选人数量
+  const [selected, setSelected] = useState(0); // 用户选择的候选人
+  const [results, setResults] = useState([]); // 解密后的投票结果
+  const [votingEnded, setVotingEnded] = useState(false); // 投票结束状态
+  const [currentAccount, setCurrentAccount] = useState(''); // 当前连接账户
+
+  // 管理员密钥对（开发演示用，实际应安全存储）
   const [adminKey] = useState(() => {
     const crypto = new VotingCrypto();
     return crypto.generateKeyPair();
   });
+
+  // 连接合约函数
   const connectContract = async (provider) => {
     const signer = await provider.getSigner();
-    const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+    const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // 本地开发地址
     return new Contract(contractAddress, VotingABI.abi, signer);
   };
-    // 账户切换处理
+
+  // 账户切换处理
   const handleSwitchAccount = async () => {
     if (!window.ethereum) return;
     
@@ -42,12 +47,13 @@ function App() {
       alert(`错误: ${error.message}`);
     }
   };
+
     // 地址格式化显示
   const formatAddress = (addr) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-
+  // 初始化效果（组件挂载时执行）
   useEffect(() => {
     async function init() {
       if (window.ethereum) {
@@ -102,19 +108,22 @@ function App() {
     };
   }, []);
 
-
+  // 处理投票提交
   const handleVote = async () => {
     if (!contract) return;
 
     const crypto = new VotingCrypto();
+    // 创建投票向量（选中的为1，其他为0）
     const mList = new Array(candidates).fill(0);
     mList[selected] = 1;
     
+    // 加密投票
     const encrypted = crypto.encryptVote(mList, adminKey.publicKey);
     const c1List = encrypted.map(e => e.c1);
     const c2List = encrypted.map(e => e.c2);
     
     try {
+      // 发送交易
       const tx = await contract.vote(c1List, c2List);
       await tx.wait();
       alert('Vote submitted successfully!');
@@ -123,6 +132,7 @@ function App() {
     }
   };
 
+  // 计算并解密结果
   const calculateResults = async () => {
     if (!contract) return;
   
@@ -130,13 +140,15 @@ function App() {
       // 先检查投票状态
       const isEnded = await contract.votingEnded.staticCall();
       if (!isEnded) {
-        alert("结果将在投票结束后公布"); // ⚠️ 提前拦截
+        alert("结果将在投票结束后公布"); //提前拦截
         return;
       }
-  
+
+      // 获取加密结果
       const crypto = new VotingCrypto();
       const [c1Results, c2Results] = await contract.getResults();
       
+      // 解密每个候选人的总票数
       const decryptedResults = [];
       for (let i=0; i<candidates; i++) {
         const count = crypto.decrypt(c1Results[i], c2Results[i], adminKey.privateKey);
@@ -150,6 +162,7 @@ function App() {
     }
   };
 
+  // 结束投票（管理员功能）
   const endVoting = async () => {
     if (!contract) return;
     
@@ -168,7 +181,8 @@ function App() {
 
   return (
     <div className="container">
-            <div className="account-bar">
+      {/* 账户管理栏 */}
+      <div className="account-bar">
         {currentAccount ? (
           <>
             <span className="connected-account">
@@ -226,11 +240,14 @@ function App() {
         </button>
       </div>
 
+      {/*
+      管理员信息展示模块注释
       <div className="admin-info">
         <h3>Admin Keys (Demo Only)</h3>
         <p>Public Key: {adminKey.publicKey}</p>
         <p>Private Key: {adminKey.privateKey}</p>
-      </div>
+      </div>      
+      */}
     
       
     </div>
