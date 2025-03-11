@@ -44,12 +44,33 @@ export class VotingCrypto {
     // 计算 g^m = c2 * inverse mod p
     const gSum = bigInt(c2Sum).multiply(inverse).mod(this.p);
     
-    // 暴力搜索离散对数（实际应使用Pohlig-Hellman等算法）
-    let accum = bigInt(1);
-    for (let i=0; i<1000; i++) {
-      if (accum.eq(gSum)) return i;
-      accum = accum.multiply(this.g).mod(this.p);
-    }
-    throw new Error('Result out of range');
+    // 计算离散对数
+    const m = this.babyStepGiantStep(this.g, gSum, this.p);
+    return m;
   }
+
+  babyStepGiantStep(g, h, p) {
+    const n = Math.ceil(Math.sqrt(p-1)) + 1;
+    
+    // Baby steps
+    const table = new Map();
+    let current = bigInt(1);
+    for (let r = 0; r < n; r++) {
+        table.set(current.toString(), r);
+        current = current.multiply(g).mod(p);
+    }
+    
+    // Giant step precompute
+    const ge = g.modPow(n, p).modInv(p);
+    current = h.multiply(ge.modPow(0, p)).mod(p);
+    
+    // Search collision
+    for (let q = 0; q < n; q++) {
+        if (table.has(current.toString())) {
+            return q * n + table.get(current.toString());
+        }
+        current = current.multiply(ge).mod(p);
+    }
+    throw new Error("Discrete log not found");
+}
 }
