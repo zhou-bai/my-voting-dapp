@@ -4,7 +4,7 @@ import bigInt from "big-integer";
 export class VotingCrypto {
   // 初始化加密参数（默认使用小素数便于演示）
   constructor(p = 7919, g = 2) {
-    console.log('初始化加密参数:', { p, g });
+    console.log('初始化加密参数2:', { p, g });
     this.p = bigInt(p);
     this.g = bigInt(g);
   }
