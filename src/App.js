@@ -138,62 +138,7 @@ useEffect(() => {
     };
   }, []);
 
-
-  // 处理投票提交 旧逻辑
-  // const handleVote = async () => {
-  //   if (!contract) return;
-
-  //   const crypto = new VotingCrypto();
-  //   // 创建投票向量（选中的为1，其他为0）
-  //   const mList = new Array(candidates).fill(0);
-  //   mList[selected] = 1;
-    
-  //   // 加密投票
-  //   const encrypted = crypto.encryptVote(mList, adminKey.publicKey);
-  //   const c1List = encrypted.map(e => e.c1);
-  //   const c2List = encrypted.map(e => e.c2);
-    
-  //   try {
-  //     // 发送交易
-  //     const tx = await contract.vote(c1List, c2List);
-  //     await tx.wait();
-  //     alert('Vote submitted successfully!');
-  //   } catch (error) {
-  //     console.error("Voting failed:", error);
-  //   }
-  // };
-  // 计算并解密结果
-// //旧逻辑
-//   const calculateResults = async () => {
-//     if (!contract) return;
-  
-//     try {
-//       // 先检查投票状态
-//       const isEnded = await contract.votingEnded.staticCall();
-//       if (!isEnded) {
-//         alert("结果将在投票结束后公布"); //提前拦截
-//         return;
-//       }
-
-//       // 获取加密结果
-//       const crypto = new VotingCrypto();
-//       const [c1Results, c2Results] = await contract.getResults();
-      
-//       // 解密每个候选人的总票数
-//       const decryptedResults = [];
-//       for (let i=0; i<candidates; i++) {
-//         const count = crypto.decrypt(c1Results[i], c2Results[i], adminKey.privateKey);
-//         decryptedResults.push(`候选人 ${i+1}: ${count}票`);
-//       }
-//       setResults(decryptedResults);
-      
-//     } catch (error) {
-//       console.error("计票错误:", error);
-//       alert(`错误: ${error.reason || error.message}`);
-//     }
-//   };
-
-  //处理投票提交 旧逻辑
+  //处理投票提交
   const handleVote = async () => {
     if (!contract) return;
 
@@ -227,18 +172,7 @@ useEffect(() => {
       return;
     }
     //获取加密结果
-    //const crypto = new VotingCrypto();
     const [c1Results, c2Results] = await contract.getResults();
-
-    // //旧解密
-    // console.log('加密结果:', [c1Results.toString(), c2Results.toString()]);
-    // const decryptedResults = [];
-    // for (let i=0; i<candidates; i++) {
-    //   const count = crypto.decrypt(c1Results[i], c2Results[i], 2841);
-    //   decryptedResults.push(`解密1候选人 ${i+1}: ${count}票`);
-    // }
-    // setResults(decryptedResults);
-    
 
     // 添加数据验证
     console.log('原始加密数据:', {
@@ -264,7 +198,7 @@ useEffect(() => {
       
       const data = await response.json();
       const decryptedResults2 = data.results.map((count, i) => 
-        `解密2候选人 ${i+1}: ${count}票`
+        `候选人 ${i+1}: ${count}票`
       );
       setResults(decryptedResults2);
     } catch (error) {

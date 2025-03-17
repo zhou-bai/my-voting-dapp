@@ -56,7 +56,7 @@ app.post('/api/keys/init', async (req, res) => {
       const keyPair = crypto.generateKeyPair();
       
       // 显式验证密钥有效性
-      console.log("生成的私钥（原始）:", keyPair.privateKey);
+      console.log("生成私钥");
       console.log("使用的加密密钥:", process.env.KEY_ENCRYPTION_SECRET);
   
       const encryptedPrivKey = encrypt(
