@@ -26,6 +26,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 启动服务
 
+**进入 my-voting-dapp**
+
 ### `Invoke-WebRequest -Uri "http://localhost:3001/api/keys/init" -Method Post`
 
 init 进行密钥初始化，生成公钥和私钥

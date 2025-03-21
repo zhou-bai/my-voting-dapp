@@ -102,3 +102,54 @@
     border-radius: 4px;
     cursor: pointer;
   }
+
+  /* 管理员面板样式 */
+.admin-panel {
+  border: 1px solid #2c3e50;
+  padding: 20px;
+  margin-top: 30px;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.whitelist-control {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.whitelist-control input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.whitelist-display ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.whitelist-display li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.remove-button {
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-status {
+  color: #e74c3c;
+  margin-right: 10px;
+  font-weight: bold;
+}
