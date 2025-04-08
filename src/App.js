@@ -26,6 +26,8 @@ function App() {
   const [ethBalance, setEthBalance] = useState("0");
   const [networkInfo, setNetworkInfo] = useState("");
 
+  const [showHelp, setShowHelp] = useState(false);
+
   //  管理员密钥对（开发演示用，实际应安全存储）
   //  const [adminKey] = useState(() => {
   //    const crypto = new VotingCrypto();
@@ -393,7 +395,32 @@ function App() {
   return (
     <div className="container">
       {/* 账户管理栏 */}
-      <div className="dashboard">
+      <div className="help-section">
+        <button onClick={() => setShowHelp(!showHelp)}>
+          {showHelp ? "隐藏帮助" : "显示指引"}
+        </button>
+
+        {showHelp && (
+          <div className="guide">
+            <h3>🗂️ 使用指南</h3>
+            <div className="faq">
+              <h4>如何投票?</h4>
+              <p>
+                1. 连接您的钱包
+                <br />
+                2. 选择候选人
+                <br />
+                3. 点击投票按钮
+              </p>
+
+              <h4>如何查看结果?</h4>
+              <p>投票结束后点击【计算结果】按钮，系统会自动解密计票结果</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* <div className="dashboard">
         <div className="info-card">
           <h3>💰 余额</h3>
           <p>{ethBalance} ETH</p>
@@ -402,7 +429,8 @@ function App() {
           <h3>📋 白名单状态</h3>
           <p>{whitelist.includes(currentAccount) ? "已认证" : "未认证"}</p>
         </div>
-      </div>
+      </div> */}
+
       <div className="account-bar">
         {currentAccount ? (
           <>
