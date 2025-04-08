@@ -4,6 +4,8 @@ import { BrowserProvider, Contract, ethers } from "ethers";
 import VotingABI from "./abis/Voting.json";
 import { ClipLoader } from "react-spinners";
 import "./App.css";
+import { Chart as ChartJS } from "chart.js/auto";
+import { Bar } from "react-chartjs-2";
 
 function App() {
   const [contract, setContract] = useState(null); // 合约实例
@@ -29,6 +31,19 @@ function App() {
   //    const crypto = new VotingCrypto();
   //    return crypto.generateKeyPair();
   //  });
+
+  const chartData = {
+    labels: Array.from({ length: candidates }, (_, i) => `候选人 ${i + 1}`),
+    datasets: [
+      {
+        label: "投票结果",
+        data: results.map((r) => (r ? parseInt(r.split(":")[1]) : 0)),
+        backgroundColor: "#36a2eb77",
+        borderColor: "#36a2eb",
+        borderWidth: 1,
+      },
+    ],
+  };
 
   // 连接合约函数
   const connectContract = async (provider) => {
@@ -434,6 +449,24 @@ function App() {
             <li key={i}>{result}</li>
           ))}
         </ul>
+      </div>
+
+      <div className="chart-section" style={{ height: "300px" }}>
+        <Bar
+          key={results.join()} // 通过唯一key强制重新渲染
+          data={chartData}
+          options={{
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                },
+              },
+            },
+          }}
+        />
       </div>
 
       <div className="admin-panel">
