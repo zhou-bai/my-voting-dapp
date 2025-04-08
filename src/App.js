@@ -21,6 +21,9 @@ function App() {
   const [adminAddress, setAdminAddress] = useState("");
   const [whitelist, setWhitelist] = useState([]);
 
+  const [ethBalance, setEthBalance] = useState("0");
+  const [networkInfo, setNetworkInfo] = useState("");
+
   //  管理员密钥对（开发演示用，实际应安全存储）
   //  const [adminKey] = useState(() => {
   //    const crypto = new VotingCrypto();
@@ -168,6 +171,24 @@ function App() {
     // 仅在首次加载时获取公钥
     fetchPublicKey();
   }, []); // 注意空依赖数组确保只执行一次
+
+  // 获取余额和网络信息
+  useEffect(() => {
+    const provider = new BrowserProvider(window.ethereum);
+    const fetchBalance = async () => {
+      if (currentAccount) {
+        const balance = await provider.getBalance(currentAccount);
+        setEthBalance(ethers.formatEther(balance));
+      }
+    };
+
+    const fetchNetwork = async () => {
+      const network = await provider.getNetwork();
+      setNetworkInfo(`${network.name} (${network.chainId})`);
+    };
+    fetchBalance();
+    fetchNetwork();
+  }, [currentAccount]);
 
   // 初始化效果（组件挂载时执行）
   useEffect(() => {
@@ -357,6 +378,16 @@ function App() {
   return (
     <div className="container">
       {/* 账户管理栏 */}
+      <div className="dashboard">
+        <div className="info-card">
+          <h3>💰 余额</h3>
+          <p>{ethBalance} ETH</p>
+        </div>
+        <div className="info-card">
+          <h3>📋 白名单状态</h3>
+          <p>{whitelist.includes(currentAccount) ? "已认证" : "未认证"}</p>
+        </div>
+      </div>
       <div className="account-bar">
         {currentAccount ? (
           <>
