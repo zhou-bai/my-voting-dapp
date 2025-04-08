@@ -153,3 +153,22 @@
   margin-right: 10px;
   font-weight: bold;
 }
+:root {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --surface-color: #f8f9fa;  /* 新增层面颜色 */
+}
+.dark {
+  --bg-color: #121212;     /* 加深背景色 */
+  --text-color: #e0e0e0;   /* 优化文字对比度 */
+  --surface-color: #1e1e1e; /* 深色模式组件背景 */
+}
+/* 关键修改部分 */ 
+html, body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  transition: 
+    background-color 0.3s ease, 
+    color 0.3s ease;
+}

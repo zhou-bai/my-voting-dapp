@@ -28,6 +28,8 @@ function App() {
 
   const [showHelp, setShowHelp] = useState(false);
 
+  const [darkMode, setDarkMode] = useState(false);
+
   //  管理员密钥对（开发演示用，实际应安全存储）
   //  const [adminKey] = useState(() => {
   //    const crypto = new VotingCrypto();
@@ -188,6 +190,15 @@ function App() {
     // 仅在首次加载时获取公钥
     fetchPublicKey();
   }, []); // 注意空依赖数组确保只执行一次
+
+  //深色模式
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add("dark");
+    } else {
+      document.body.classList.remove("dark");
+    }
+  }, [darkMode]);
 
   // 获取余额和网络信息
   useEffect(() => {
@@ -420,6 +431,24 @@ function App() {
         )}
       </div>
 
+      <button
+        onClick={() => setDarkMode(!darkMode)}
+        style={{
+          position: "fixed",
+          top: 20,
+          left: 20,
+          zIndex: 1000,
+          padding: "8px 12px",
+          borderRadius: 8,
+          background: "transparent",
+          color: "var(--text-color)",
+          border: "2px solid var(--text-color)",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+        }}
+      >
+        {darkMode ? "🌞 亮色模式" : "🌙 深色模式"}
+      </button>
       {/* <div className="dashboard">
         <div className="info-card">
           <h3>💰 余额</h3>
@@ -430,7 +459,6 @@ function App() {
           <p>{whitelist.includes(currentAccount) ? "已认证" : "未认证"}</p>
         </div>
       </div> */}
-
       <div className="account-bar">
         {currentAccount ? (
           <>
@@ -450,7 +478,6 @@ function App() {
           </button>
         )}
       </div>
-
       <h1>Encrypted Voting DApp</h1>
       <div className="section">
         <h2>Voting Booth</h2>
@@ -473,44 +500,42 @@ function App() {
           {decrypting ? <ClipLoader size={20} /> : "计算投票结果"}
         </button>
         <ul>
+          <div className="chart-section" style={{ height: "300px" }}>
+            <Bar
+              key={results.join()} // 通过唯一key强制重新渲染
+              data={chartData}
+              options={{
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 1,
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
           {results.map((result, i) => (
             <li key={i}>{result}</li>
           ))}
         </ul>
       </div>
 
-      <div className="chart-section" style={{ height: "300px" }}>
-        <Bar
-          key={results.join()} // 通过唯一key强制重新渲染
-          data={chartData}
-          options={{
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  stepSize: 1,
-                },
-              },
-            },
-          }}
-        />
-      </div>
-
-      <div className="admin-panel">
-        <h2>Administration</h2>
-        <button
-          onClick={endVoting}
-          className="admin-button"
-          disabled={votingEnded}
-        >
-          {votingEnded ? "投票已结束" : "结束投票"}
-        </button>
-      </div>
-
       {/* 新增白名单管理面板 */}
       {isAdmin() && (
         <div className="admin-panel">
+          <div className="admin-panel">
+            <h2>Administration</h2>
+            <button
+              onClick={endVoting}
+              className="admin-button"
+              disabled={votingEnded}
+            >
+              {votingEnded ? "投票已结束" : "结束投票"}
+            </button>
+          </div>
           <h2>白名单管理</h2>
           <div className="whitelist-control">
             <input
@@ -540,7 +565,6 @@ function App() {
           </div>
         </div>
       )}
-
       {/*
       管理员信息展示模块注释
       <div className="admin-info">
