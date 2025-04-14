@@ -172,3 +172,135 @@ html, body {
     background-color 0.3s ease, 
     color 0.3s ease;
 }
+
+.logs-table {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+th, td {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+th {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+tr:nth-child(even) {
+  background-color: var(--table-stripe);
+}
+
+.search-bar {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.back-button {
+  margin-bottom: 20px;
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+/* Logs 页面样式 */
+.logs-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.search-bar input[type="text"] {
+  flex: 1;
+  min-width: 300px;
+  padding: 0.8rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-range input[type="date"] {
+  padding: 0.6rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+}
+
+.logs-table-container {
+  overflow-x: auto;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--background-color);
+  color: var(--text-color);
+}
+
+.logs-table th,
+.logs-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.logs-table th {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.encrypted-data {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.dark .logs-table {
+  background-color: #2d2d2d;
+}
+
+.dark .logs-table th {
+  background-color: #1a5a92;
+}

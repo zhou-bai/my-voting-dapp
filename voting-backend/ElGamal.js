@@ -36,36 +36,55 @@ export class VotingCrypto {
     });
   }
 
-  // 解密密文
+  //   // 解密密文
+  //   decrypt(c1Sum, c2Sum, privateKey) {
+  //     const sk = bigInt(privateKey);
+  //     const denominator = bigInt(c1Sum).modPow(sk, this.p);
+  //     const inverse = denominator.modInv(this.p);
+  //     const gSum = bigInt(c2Sum).multiply(inverse).mod(this.p);
+  //     // 使用BSGS算法求解离散对数
+  //     return this._bsgs(this.g, gSum, this.p);
+  //   }
+  //   // Baby-step Giant-step 离散对数算法
+  //   _bsgs(g, h, p) {
+  //     const n = p.minus(1); // 群阶p-1
+  //     const m = n.sqrt().add(1); // 步长为√n
+  //     // 预计算baby steps: g^j -> j
+  //     const lookup = new Map();
+  //     let babyStep = bigInt(1);
+  //     for (let j = 0; j < m; j++) {
+  //       lookup.set(babyStep.toString(), j);
+  //       babyStep = babyStep.multiply(g).mod(p);
+  //     }
+  //     // 计算giant step参数
+  //     const giantStep = g.modPow(m, p).modInv(p); // g^(-m) mod p
+  //     let giantValue = h.mod(p);
+  //     // 搜索匹配项
+  //     for (let i = 0; i < m; i++) {
+  //       if (lookup.has(giantValue.toString())) {
+  //         return i * m + lookup.get(giantValue.toString());
+  //       }
+  //       giantValue = giantValue.multiply(giantStep).mod(p);
+  //     }
+  //     throw new Error("Discrete logarithm not found");
+  //   }
+  // }
+  // 解密密文（使用离散对数暴力破解，仅适用于小素数）
   decrypt(c1Sum, c2Sum, privateKey) {
     const sk = bigInt(privateKey);
+    // 计算分母 y^r = c1^sk mod p
     const denominator = bigInt(c1Sum).modPow(sk, this.p);
-    const inverse = denominator.modInv(this.p);
+    // 计算模逆元：denominator^-1 mod p
+    const inverse = denominator.modPow(this.p.minus(2), this.p);
+    // 计算 g^m = c2 * inverse mod p
     const gSum = bigInt(c2Sum).multiply(inverse).mod(this.p);
-    // 使用BSGS算法求解离散对数
-    return this._bsgs(this.g, gSum, this.p);
-  }
-  // Baby-step Giant-step 离散对数算法
-  _bsgs(g, h, p) {
-    const n = p.minus(1); // 群阶p-1
-    const m = n.sqrt().add(1); // 步长为√n
-    // 预计算baby steps: g^j -> j
-    const lookup = new Map();
-    let babyStep = bigInt(1);
-    for (let j = 0; j < m; j++) {
-      lookup.set(babyStep.toString(), j);
-      babyStep = babyStep.multiply(g).mod(p);
+
+    // 暴力搜索离散对数（实际应使用Pohlig-Hellman等算法）
+    let accum = bigInt(1);
+    for (let i = 0; i < 10000; i++) {
+      if (accum.eq(gSum)) return i;
+      accum = accum.multiply(this.g).mod(this.p);
     }
-    // 计算giant step参数
-    const giantStep = g.modPow(m, p).modInv(p); // g^(-m) mod p
-    let giantValue = h.mod(p);
-    // 搜索匹配项
-    for (let i = 0; i < m; i++) {
-      if (lookup.has(giantValue.toString())) {
-        return i * m + lookup.get(giantValue.toString());
-      }
-      giantValue = giantValue.multiply(giantStep).mod(p);
-    }
-    throw new Error("Discrete logarithm not found");
+    throw new Error("Result out of range");
   }
 }

@@ -39,6 +39,13 @@ contract EncryptedVoting {
         }
     }
 
+    event Voted(
+        address indexed voter,
+        uint256 timestamp,
+        uint256[] c1List,
+        uint256[] c2List
+    );
+
     modifier onlyAdmin() {
         require(msg.sender == admin, "Admin only");
         _;
@@ -60,6 +67,7 @@ contract EncryptedVoting {
         }
 
         voters[msg.sender] = true;
+        emit Voted(msg.sender, block.timestamp, c1List, c2List);
     }
 
     // 添加白名单

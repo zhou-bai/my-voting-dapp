@@ -6,6 +6,8 @@ import { ClipLoader } from "react-spinners";
 import "./App.css";
 import { Chart as ChartJS } from "chart.js/auto";
 import { Bar } from "react-chartjs-2";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import Logs from "./Logs";
 
 function App() {
   const [contract, setContract] = useState(null); // 合约实例
@@ -404,176 +406,201 @@ function App() {
   };
 
   return (
-    <div className="container">
-      {/* 账户管理栏 */}
-      <div className="help-section">
-        <button onClick={() => setShowHelp(!showHelp)}>
-          {showHelp ? "隐藏帮助" : "显示指引"}
-        </button>
+    <Router>
+      <div className="container">
+        <nav className="nav-bar">
+          <Link to="/">首页</Link>
+          <Link to="/logs">投票日志</Link>
+        </nav>
 
-        {showHelp && (
-          <div className="guide">
-            <h3>🗂️ 使用指南</h3>
-            <div className="faq">
-              <h4>如何投票?</h4>
-              <p>
-                1. 连接您的钱包
-                <br />
-                2. 选择候选人
-                <br />
-                3. 点击投票按钮
-              </p>
-
-              <h4>如何查看结果?</h4>
-              <p>投票结束后点击【计算结果】按钮，系统会自动解密计票结果</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <button
-        onClick={() => setDarkMode(!darkMode)}
-        style={{
-          position: "fixed",
-          top: 20,
-          left: 20,
-          zIndex: 1000,
-          padding: "8px 12px",
-          borderRadius: 8,
-          background: "transparent",
-          color: "var(--text-color)",
-          border: "2px solid var(--text-color)",
-          cursor: "pointer",
-          transition: "all 0.3s ease",
-        }}
-      >
-        {darkMode ? "🌞 亮色模式" : "🌙 深色模式"}
-      </button>
-      {/* <div className="dashboard">
-        <div className="info-card">
-          <h3>💰 余额</h3>
-          <p>{ethBalance} ETH</p>
-        </div>
-        <div className="info-card">
-          <h3>📋 白名单状态</h3>
-          <p>{whitelist.includes(currentAccount) ? "已认证" : "未认证"}</p>
-        </div>
-      </div> */}
-      <div className="account-bar">
-        {currentAccount ? (
-          <>
-            <span className="admin-status">
-              {isAdmin() ? "[管理员] " : "[选民] "}
-            </span>
-            <span className="connected-account">
-              当前账户: {formatAddress(currentAccount)}
-            </span>
-            <button onClick={handleSwitchAccount} className="switch-button">
-              切换账户
-            </button>
-          </>
-        ) : (
-          <button onClick={handleSwitchAccount} className="connect-button">
-            连接钱包
-          </button>
-        )}
-      </div>
-      <h1>Encrypted Voting DApp</h1>
-      <div className="section">
-        <h2>Voting Booth</h2>
-        <select
-          value={selected}
-          onChange={(e) => setSelected(parseInt(e.target.value))}
-        >
-          {Array.from({ length: candidates }).map((_, i) => (
-            <option key={i} value={i}>
-              Candidate {i + 1}
-            </option>
-          ))}
-        </select>
-        <button onClick={handleVote}>Cast Vote</button>
-      </div>
-
-      <div className="section">
-        <h2>Results</h2>
-        <button onClick={calculateResults} disabled={decrypting}>
-          {decrypting ? <ClipLoader size={20} /> : "计算投票结果"}
-        </button>
-        <ul>
-          <div className="chart-section" style={{ height: "300px" }}>
-            <Bar
-              key={results.join()} // 通过唯一key强制重新渲染
-              data={chartData}
-              options={{
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      stepSize: 1,
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-          {results.map((result, i) => (
-            <li key={i}>{result}</li>
-          ))}
-        </ul>
-      </div>
-
-      {/* 新增白名单管理面板 */}
-      {isAdmin() && (
-        <div className="admin-panel">
-          <div className="admin-panel">
-            <h2>Administration</h2>
-            <button
-              onClick={endVoting}
-              className="admin-button"
-              disabled={votingEnded}
-            >
-              {votingEnded ? "投票已结束" : "结束投票"}
-            </button>
-          </div>
-          <h2>白名单管理</h2>
-          <div className="whitelist-control">
-            <input
-              type="text"
-              value={whitelistAddress}
-              onChange={(e) => setWhitelistAddress(e.target.value)}
-              placeholder="输入以太坊地址"
-            />
-            <button onClick={handleAddToWhitelist}>添加地址</button>
-          </div>
-
-          <div className="whitelist-display">
-            <h3>当前白名单 ({whitelist.length})</h3>
-            <ul>
-              {whitelist.map((address, index) => (
-                <li key={index}>
-                  {formatAddress(address)}
-                  <button
-                    onClick={() => handleRemoveFromWhitelist(address)}
-                    className="remove-button"
-                  >
-                    移除
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div className="container">
+                {/* 账户管理栏 */}
+                <div className="help-section">
+                  <button onClick={() => setShowHelp(!showHelp)}>
+                    {showHelp ? "隐藏帮助" : "显示指引"}
                   </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-      {/*
-      管理员信息展示模块注释
-      <div className="admin-info">
-        <h3>Admin Keys (Demo Only)</h3>
-        <p>Public Key: {adminKey.publicKey}</p>
-        <p>Private Key: {adminKey.privateKey}</p>
-      </div>      
-      */}
-    </div>
+
+                  {showHelp && (
+                    <div className="guide">
+                      <h3>🗂️ 使用指南</h3>
+                      <div className="faq">
+                        <h4>如何投票?</h4>
+                        <p>
+                          1. 连接您的钱包
+                          <br />
+                          2. 选择候选人
+                          <br />
+                          3. 点击投票按钮
+                        </p>
+
+                        <h4>如何查看结果?</h4>
+                        <p>
+                          投票结束后点击【计算结果】按钮，系统会自动解密计票结果
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  style={{
+                    position: "fixed",
+                    top: 20,
+                    left: 20,
+                    zIndex: 1000,
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    background: "transparent",
+                    color: "var(--text-color)",
+                    border: "2px solid var(--text-color)",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  {darkMode ? "🌞 亮色模式" : "🌙 深色模式"}
+                </button>
+                {/* <div className="dashboard">
+                <div className="info-card">
+                  <h3>💰 余额</h3>
+                  <p>{ethBalance} ETH</p>
+                </div>
+                <div className="info-card">
+                  <h3>📋 白名单状态</h3>
+                  <p>{whitelist.includes(currentAccount) ? "已认证" : "未认证"}</p>
+                </div>
+              </div> */}
+                <div className="account-bar">
+                  {currentAccount ? (
+                    <>
+                      <span className="admin-status">
+                        {isAdmin() ? "[管理员] " : "[选民] "}
+                      </span>
+                      <span className="connected-account">
+                        当前账户: {formatAddress(currentAccount)}
+                      </span>
+                      <button
+                        onClick={handleSwitchAccount}
+                        className="switch-button"
+                      >
+                        切换账户
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleSwitchAccount}
+                      className="connect-button"
+                    >
+                      连接钱包
+                    </button>
+                  )}
+                </div>
+                <h1>Encrypted Voting DApp</h1>
+                <div className="section">
+                  <h2>Voting Booth</h2>
+                  <select
+                    value={selected}
+                    onChange={(e) => setSelected(parseInt(e.target.value))}
+                  >
+                    {Array.from({ length: candidates }).map((_, i) => (
+                      <option key={i} value={i}>
+                        Candidate {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <button onClick={handleVote}>Cast Vote</button>
+                </div>
+
+                <div className="section">
+                  <h2>Results</h2>
+                  <button onClick={calculateResults} disabled={decrypting}>
+                    {decrypting ? <ClipLoader size={20} /> : "计算投票结果"}
+                  </button>
+                  <ul>
+                    <div className="chart-section" style={{ height: "300px" }}>
+                      <Bar
+                        key={results.join()} // 通过唯一key强制重新渲染
+                        data={chartData}
+                        options={{
+                          maintainAspectRatio: false,
+                          scales: {
+                            y: {
+                              beginAtZero: true,
+                              ticks: {
+                                stepSize: 1,
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                    {results.map((result, i) => (
+                      <li key={i}>{result}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* 新增白名单管理面板 */}
+                {isAdmin() && (
+                  <div className="admin-panel">
+                    <div className="admin-panel">
+                      <h2>Administration</h2>
+                      <button
+                        onClick={endVoting}
+                        className="admin-button"
+                        disabled={votingEnded}
+                      >
+                        {votingEnded ? "投票已结束" : "结束投票"}
+                      </button>
+                    </div>
+                    <h2>白名单管理</h2>
+                    <div className="whitelist-control">
+                      <input
+                        type="text"
+                        value={whitelistAddress}
+                        onChange={(e) => setWhitelistAddress(e.target.value)}
+                        placeholder="输入以太坊地址"
+                      />
+                      <button onClick={handleAddToWhitelist}>添加地址</button>
+                    </div>
+
+                    <div className="whitelist-display">
+                      <h3>当前白名单 ({whitelist.length})</h3>
+                      <ul>
+                        {whitelist.map((address, index) => (
+                          <li key={index}>
+                            {formatAddress(address)}
+                            <button
+                              onClick={() => handleRemoveFromWhitelist(address)}
+                              className="remove-button"
+                            >
+                              移除
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                {/*
+              管理员信息展示模块注释
+              <div className="admin-info">
+                <h3>Admin Keys (Demo Only)</h3>
+                <p>Public Key: {adminKey.publicKey}</p>
+                <p>Private Key: {adminKey.privateKey}</p>
+              </div>      
+              */}
+              </div>
+            }
+          />
+          <Route path="/logs" element={<Logs />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
