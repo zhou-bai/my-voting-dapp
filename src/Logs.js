@@ -131,17 +131,22 @@ const Logs = () => {
           <p>正在加载日志...</p>
         </div>
       ) : (
-        /* 日志表格 */
         <div className="logs-table-container">
           <table className="logs-table">
             <thead>
               <tr>
-                <th>投票者</th>
-                <th>时间</th>
-                <th>加密数据 (c1)</th>
-                <th>加密数据 (c2)</th>
-                <th>交易哈希</th>
-                <th>区块高度</th>
+                <th className="address-col">投票地址</th>
+                <th className="time-col">投票时间</th>
+                <th className="data-col">
+                  加密票数 <br />
+                  <small>(C1列表，显示前两个数值)</small>
+                </th>
+                <th className="data-col">
+                  加密签名 <br />
+                  <small>(C2列表，显示前两个数值)</small>
+                </th>
+                <th className="hash-col">交易哈希值</th>
+                <th className="block-col">区块编号</th>
               </tr>
             </thead>
             <tbody>

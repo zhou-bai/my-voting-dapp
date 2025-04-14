@@ -32,6 +32,9 @@ function App() {
 
   const [darkMode, setDarkMode] = useState(false);
 
+  //白名单查询
+  const [searchTerm, setSearchTerm] = useState("");
+
   //  管理员密钥对（开发演示用，实际应安全存储）
   //  const [adminKey] = useState(() => {
   //    const crypto = new VotingCrypto();
@@ -409,8 +412,24 @@ function App() {
     <Router>
       <div className="container">
         <nav className="nav-bar">
-          <Link to="/">首页</Link>
-          <Link to="/logs">投票日志</Link>
+          <Link
+            to="/"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            <span className="nav-icon">🏠</span>
+            <span className="nav-text">投票大厅</span>
+          </Link>
+          <Link
+            to="/logs"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            <span className="nav-icon">📜</span>
+            <span className="nav-text">审计日志</span>
+          </Link>
         </nav>
 
         <Routes>
@@ -570,18 +589,47 @@ function App() {
 
                     <div className="whitelist-display">
                       <h3>当前白名单 ({whitelist.length})</h3>
+
+                      {/* 新增搜索框 */}
+                      <div className="search-container">
+                        <input
+                          type="text"
+                          placeholder="🔍 输入地址片段进行搜索..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="search-input"
+                        />
+                        <div className="search-tip">
+                          支持模糊搜索，不区分大小写
+                        </div>
+                      </div>
                       <ul>
-                        {whitelist.map((address, index) => (
-                          <li key={index}>
-                            {formatAddress(address)}
-                            <button
-                              onClick={() => handleRemoveFromWhitelist(address)}
-                              className="remove-button"
-                            >
-                              移除
-                            </button>
-                          </li>
-                        ))}
+                        {whitelist
+                          .filter((addr) =>
+                            addr
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase())
+                          )
+                          .map((address, index) => (
+                            <li key={index}>
+                              <div className="address-display">
+                                {/* 新增完整地址展示 */}
+                                <div className="full-address">{address}</div>
+                                {/* 保留原有格式化地址 */}
+                                <div className="formatted-address">
+                                  {formatAddress(address)}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() =>
+                                  handleRemoveFromWhitelist(address)
+                                }
+                                className="remove-button"
+                              >
+                                移除
+                              </button>
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   </div>
