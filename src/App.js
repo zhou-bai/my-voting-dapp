@@ -8,6 +8,7 @@ import { Chart as ChartJS } from "chart.js/auto";
 import { Bar } from "react-chartjs-2";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Logs from "./Logs";
+import Candidates from "./Candidates";
 
 function App() {
   const [contract, setContract] = useState(null); // 合约实例
@@ -430,6 +431,15 @@ function App() {
             <span className="nav-icon">📜</span>
             <span className="nav-text">审计日志</span>
           </Link>
+          <Link
+            to="/candidates"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            <span className="nav-icon">👥</span>
+            <span className="nav-text">候选人</span>
+          </Link>
         </nav>
 
         <Routes>
@@ -646,6 +656,7 @@ function App() {
             }
           />
           <Route path="/logs" element={<Logs />} />
+          <Route path="/candidates" element={<Candidates />} />
         </Routes>
       </div>
     </Router>

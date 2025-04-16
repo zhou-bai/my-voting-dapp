@@ -25,29 +25,6 @@ const Logs = () => {
 
   // 加载日志数据
   // 修改加载日志部分
-  const loadLogs = async () => {
-    if (!contract) return;
-    try {
-      const filter = contract.filters.Voted();
-      const events = await contract.queryFilter(filter);
-      const formattedLogs = events.map((event) => ({
-        voter: event.args.voter,
-        // 显式转换为Number类型
-        timestamp: Number(event.args.timestamp),
-        // 显式字符串转换
-        c1List: event.args.c1List.map((n) => n.toString()),
-        c2List: event.args.c2List.map((n) => n.toString()),
-        transactionHash: event.transactionHash,
-        // 显式数值转换
-        blockNumber: Number(event.blockNumber),
-      }));
-      setLogs(formattedLogs);
-    } catch (error) {
-      console.error("加载日志失败:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 初始化合约连接
   useEffect(() => {
@@ -73,6 +50,29 @@ const Logs = () => {
 
   // 当合约变化时加载数据
   useEffect(() => {
+    const loadLogs = async () => {
+      if (!contract) return;
+      try {
+        const filter = contract.filters.Voted();
+        const events = await contract.queryFilter(filter);
+        const formattedLogs = events.map((event) => ({
+          voter: event.args.voter,
+          // 显式转换为Number类型
+          timestamp: Number(event.args.timestamp),
+          // 显式字符串转换
+          c1List: event.args.c1List.map((n) => n.toString()),
+          c2List: event.args.c2List.map((n) => n.toString()),
+          transactionHash: event.transactionHash,
+          // 显式数值转换
+          blockNumber: Number(event.blockNumber),
+        }));
+        setLogs(formattedLogs);
+      } catch (error) {
+        console.error("加载日志失败:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     if (contract) {
       loadLogs();
     }
@@ -138,12 +138,12 @@ const Logs = () => {
                 <th className="address-col">投票地址</th>
                 <th className="time-col">投票时间</th>
                 <th className="data-col">
-                  加密票数 <br />
-                  <small>(C1列表，显示前两个数值)</small>
+                  加密内容 <br />
+                  <small>(C1列表)</small>
                 </th>
                 <th className="data-col">
-                  加密签名 <br />
-                  <small>(C2列表，显示前两个数值)</small>
+                  加密内容 <br />
+                  <small>(C2列表)</small>
                 </th>
                 <th className="hash-col">交易哈希值</th>
                 <th className="block-col">区块编号</th>

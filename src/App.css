@@ -487,3 +487,71 @@ tr:nth-child(even) {
     padding: 0.6rem 1rem;
   }
 }
+
+/* 候选人卡片样式 */
+.candidates-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.candidate-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.candidate-avatar {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  border-bottom: 3px solid #eee;
+}
+
+.candidate-info {
+  padding: 1.5rem;
+}
+
+.vote-status {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.encrypted-votes {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+/* 候选人卡片 */
+.candidate-card {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.candidate-card:hover {
+  transform: translateY(-5px);
+}
+.candidate-avatar {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  background: #f0f2f5;
+}
+.total-votes {
+  font-size: 24px;
+  font-weight: bold;
+  color: #36a2eb;
+  margin-top: 8px;
+}
+/* 加载状态 */
+.loading {
+  text-align: center;
+  padding: 40px;
+}
