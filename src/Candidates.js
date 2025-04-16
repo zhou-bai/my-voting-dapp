@@ -11,19 +11,22 @@ const Candidates = () => {
       id: 1,
       name: "候选人1：区块链安全专家",
       description: "专注智能合约安全审计",
-      image: "/pictures/candidate1.jpg",
+      image:
+        "https://tse1-mm.cn.bing.net/th/id/OIP-C.jHqyk4s-wyS-ZTsorWQ1QQHaHa?w=201&h=201&c=7&r=0&o=5&dpr=1.3&pid=1.7",
     },
     {
       id: 2,
       name: "候选人2：DeFi创新者",
       description: "去中心化金融协议开发者",
-      image: "/pictures/candidate2.jpg",
+      image:
+        "https://tse1-mm.cn.bing.net/th/id/OIP-C.jHqyk4s-wyS-ZTsorWQ1QQHaHa?w=201&h=201&c=7&r=0&o=5&dpr=1.3&pid=1.7",
     },
     {
       id: 3,
       name: "候选人3：跨链架构师",
       description: "多链互操作协议设计",
-      image: "/pictures/candidate3.jpg",
+      image:
+        "https://tse1-mm.cn.bing.net/th/id/OIP-C.jHqyk4s-wyS-ZTsorWQ1QQHaHa?w=201&h=201&c=7&r=0&o=5&dpr=1.3&pid=1.7",
     },
   ];
 
@@ -130,14 +133,15 @@ const Candidates = () => {
         <div className="candidates-grid">
           {candidates.map((candidate, index) => (
             <div key={candidate.id} className="candidate-card">
-              {/* <img
+              <img
                 src={candidate.image}
                 alt={candidate.name}
                 className="candidate-avatar"
                 onError={(e) => {
-                  e.target.src = "/pictures/fallback-avatar.png";
+                  e.target.src =
+                    process.env.PUBLIC_URL + "/pictures/fallback-avatar.png";
                 }}
-              /> */}
+              />
               <div className="candidate-info">
                 <h2>{candidate.name}</h2>
                 <p className="description">{candidate.description}</p>
