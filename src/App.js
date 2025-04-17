@@ -23,7 +23,9 @@ function App() {
 
   // 新增状态管理
   const [whitelistAddress, setWhitelistAddress] = useState("");
-  const [adminAddress, setAdminAddress] = useState("");
+  const [adminAddress, setAdminAddress] = useState(
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  );
   const [whitelist, setWhitelist] = useState([]);
 
   const [ethBalance, setEthBalance] = useState("0");
@@ -71,6 +73,18 @@ function App() {
     "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
   ];
 
+  // 新增状态
+  const [contractAddress, setContractAddress] = useState(() => {
+    const saved = localStorage.getItem("contractHistory");
+    return saved
+      ? JSON.parse(saved)[0]
+      : "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  });
+  const [savedContracts, setSavedContracts] = useState(() => {
+    return JSON.parse(localStorage.getItem("contractHistory")) || [];
+  });
+  const [newContractInput, setNewContractInput] = useState("");
+
   const chartData = {
     labels: Array.from({ length: candidates }, (_, i) => `候选人 ${i + 1}`),
     datasets: [
@@ -84,22 +98,25 @@ function App() {
     ],
   };
 
-  // 连接合约函数
   const connectContract = async (provider) => {
     const signer = await provider.getSigner();
-    const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
     const contractInstance = new Contract(
-      contractAddress,
+      contractAddress, // 使用状态中的地址
       VotingABI.abi,
       signer
     );
 
-    // 获取管理员地址
-    const admin = await contractInstance.admin();
-    setAdminAddress(admin);
-
-    return contractInstance;
+    try {
+      // 添加合约验证
+      const admin = await contractInstance.admin();
+      setAdminAddress(admin);
+      return contractInstance;
+    } catch (e) {
+      console.error("合约连接失败:", e);
+      return null;
+    }
   };
+
   // 获取白名单列表
   // 使用useCallback封装获取白名单函数
   const fetchWhitelist = useCallback(async () => {
@@ -209,6 +226,14 @@ function App() {
 
       await contract.waitForDeployment();
       const address = await contract.getAddress();
+      // 新增：将合约地址加入列表（防重复）
+      const updatedContracts = Array.from(
+        new Set([address, ...savedContracts])
+      ).slice(0, 10); // 最多保留10条记录
+
+      setSavedContracts(updatedContracts);
+      localStorage.setItem("contractHistory", JSON.stringify(updatedContracts));
+      setContractAddress(address); // 自动切换到新合约
 
       // 更新前端状态
       setContract(contract);
@@ -509,6 +534,85 @@ function App() {
     }
   };
 
+  const ContractManager = () => {
+    const [showManager, setShowManager] = useState(false);
+
+    const handleAddContract = () => {
+      if (!ethers.isAddress(newContractInput)) {
+        alert("请输入有效的合约地址");
+        return;
+      }
+
+      const updated = [...new Set([...savedContracts, newContractInput])];
+      setSavedContracts(updated);
+      localStorage.setItem("contractHistory", JSON.stringify(updated));
+      setNewContractInput("");
+    };
+
+    const switchContract = async (address) => {
+      if (!ethers.isAddress(address)) return;
+
+      try {
+        const provider = new BrowserProvider(window.ethereum);
+        const contractInstance = new Contract(
+          address,
+          VotingABI.abi,
+          await provider.getSigner()
+        );
+
+        // 验证合约是否有效
+        await contractInstance.admin();
+
+        setContract(contractInstance);
+        setContractAddress(address);
+
+        // 重置相关状态
+        setResults([]);
+        setVotingEnded(false);
+        fetchWhitelist();
+      } catch (e) {
+        alert("无效的合约地址或ABI不匹配");
+      }
+    };
+
+    return (
+      <div className="contract-manager">
+        <button onClick={() => setShowManager(!showManager)}>
+          {showManager ? "隐藏合约管理" : "管理智能合约"}
+        </button>
+
+        {showManager && (
+          <div className="contract-controls">
+            <div className="contract-input">
+              <input
+                type="text"
+                value={newContractInput}
+                onChange={(e) => setNewContractInput(e.target.value)}
+                placeholder="输入新合约地址"
+              />
+              <button onClick={handleAddContract}>添加</button>
+            </div>
+
+            <div className="saved-contracts">
+              <h4>已保存合约：</h4>
+              <select
+                value={contractAddress}
+                onChange={(e) => switchContract(e.target.value)}
+              >
+                {savedContracts.map((addr, i) => (
+                  <option key={i} value={addr}>
+                    {`${addr.slice(0, 6)}...${addr.slice(-4)}`}
+                    {i === 0 && " (默认)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Router>
       <div className="container">
@@ -540,6 +644,7 @@ function App() {
             <span className="nav-icon">👥</span>
             <span className="nav-text">候选人</span>
           </Link>
+          <ContractManager />
         </nav>
 
         <Routes>
@@ -603,6 +708,7 @@ function App() {
                   <p>{whitelist.includes(currentAccount) ? "已认证" : "未认证"}</p>
                 </div>
               </div> */}
+
                 <div className="account-bar">
                   {currentAccount ? (
                     <>
@@ -629,55 +735,69 @@ function App() {
                   )}
                 </div>
                 <h1>Encrypted Voting DApp</h1>
-                <div className="section">
-                  <h2>Voting Booth</h2>
-                  <select
-                    value={selected}
-                    onChange={(e) => setSelected(parseInt(e.target.value))}
-                  >
-                    {Array.from({ length: candidates }).map((_, i) => (
-                      <option key={i} value={i}>
-                        Candidate {i + 1}
-                      </option>
-                    ))}
-                  </select>
-                  <button onClick={handleVote}>Cast Vote</button>
-                </div>
 
-                <div className="section">
-                  <h2>Results</h2>
-                  <button onClick={calculateResults} disabled={decrypting}>
-                    {decrypting ? <ClipLoader size={20} /> : "计算投票结果"}
-                  </button>
-                  <ul>
-                    <div className="chart-section" style={{ height: "300px" }}>
-                      <Bar
-                        key={results.join()} // 通过唯一key强制重新渲染
-                        data={chartData}
-                        options={{
-                          maintainAspectRatio: false,
-                          scales: {
-                            y: {
-                              beginAtZero: true,
-                              ticks: {
-                                stepSize: 1,
-                              },
-                            },
-                          },
-                        }}
-                      />
+                {/* 条件渲染投票界面 */}
+                {contract ? (
+                  <>
+                    <div className="section">
+                      <h2>Voting Booth</h2>
+                      <select
+                        value={selected}
+                        onChange={(e) => setSelected(parseInt(e.target.value))}
+                      >
+                        {Array.from({ length: candidates }).map((_, i) => (
+                          <option key={i} value={i}>
+                            Candidate {i + 1}
+                          </option>
+                        ))}
+                      </select>
+                      <button onClick={handleVote}>Cast Vote</button>
                     </div>
-                    {results.map((result, i) => (
-                      <li key={i}>{result}</li>
-                    ))}
-                  </ul>
-                </div>
 
-                {/* 新增白名单管理面板 */}
+                    <div className="section">
+                      <h2>Results</h2>
+                      <button onClick={calculateResults} disabled={decrypting}>
+                        {decrypting ? <ClipLoader size={20} /> : "计算投票结果"}
+                      </button>
+                      <ul>
+                        <div
+                          className="chart-section"
+                          style={{ height: "300px" }}
+                        >
+                          <Bar
+                            key={results.join()} // 通过唯一key强制重新渲染
+                            data={chartData}
+                            options={{
+                              maintainAspectRatio: false,
+                              scales: {
+                                y: {
+                                  beginAtZero: true,
+                                  ticks: {
+                                    stepSize: 1,
+                                  },
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                        {results.map((result, i) => (
+                          <li key={i}>{result}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                ) : (
+                  <div className="connect-prompt">
+                    <p>⚠️ 请先连接智能合约以进行投票</p>
+                  </div>
+                )}
+
+                {/* 管理员面板 */}
                 {isAdmin() && (
                   <div className="admin-panel">
                     <h2>Administration</h2>
 
+                    {/* 部署新合约部分始终显示 */}
                     {/* 新增部署区块 */}
                     <div className="deploy-section">
                       <h3>创建新投票</h3>
@@ -699,6 +819,13 @@ function App() {
                           生成白名单
                         </button>
                       </div>
+                      {/* 新增部署状态展示 */}
+                      {deploying && (
+                        <div className="deploy-status">
+                          <ClipLoader size={20} />
+                          <span>合约部署中...（可能需要15-30秒）</span>
+                        </div>
+                      )}
 
                       {generatedWhitelist.length > 0 && (
                         <div className="whitelist-preview">
@@ -719,82 +846,90 @@ function App() {
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={endVoting}
-                      className="admin-button"
-                      disabled={votingEnded}
-                    >
-                      {votingEnded ? "投票已结束" : "结束投票"}
-                    </button>
-                    <h2>白名单管理</h2>
-                    <div className="whitelist-control">
-                      <input
-                        type="text"
-                        value={whitelistAddress}
-                        onChange={(e) => setWhitelistAddress(e.target.value)}
-                        placeholder="输入以太坊地址"
-                      />
-                      <button onClick={handleAddToWhitelist}>添加地址</button>
-                    </div>
 
-                    <div className="whitelist-display">
-                      <h3>当前白名单 ({whitelist.length})</h3>
-
-                      {/* 新增搜索框 */}
-                      <div className="search-container">
-                        <input
-                          type="text"
-                          placeholder="🔍 输入地址片段进行搜索..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="search-input"
-                        />
-                        <div className="search-tip">
-                          支持模糊搜索，不区分大小写
+                    {/* 现有合约管理功能 */}
+                    {contract ? (
+                      <>
+                        <button
+                          onClick={endVoting}
+                          className="admin-button"
+                          disabled={votingEnded}
+                        >
+                          {votingEnded ? "投票已结束" : "结束投票"}
+                        </button>
+                        {/* 白名单管理 */}
+                        <h2>白名单管理</h2>
+                        <div className="whitelist-control">
+                          <input
+                            type="text"
+                            value={whitelistAddress}
+                            onChange={(e) =>
+                              setWhitelistAddress(e.target.value)
+                            }
+                            placeholder="输入以太坊地址"
+                          />
+                          <button onClick={handleAddToWhitelist}>
+                            添加地址
+                          </button>
                         </div>
-                      </div>
-                      <ul>
-                        {whitelist
-                          .filter((addr) =>
-                            addr
-                              .toLowerCase()
-                              .includes(searchTerm.toLowerCase())
-                          )
-                          .map((address, index) => (
-                            <li key={index}>
-                              <div className="address-display">
-                                {/* 新增完整地址展示 */}
-                                <div className="full-address">{address}</div>
-                                {/* 保留原有格式化地址 */}
-                                <div className="formatted-address">
-                                  {formatAddress(address)}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() =>
-                                  handleRemoveFromWhitelist(address)
-                                }
-                                className="remove-button"
-                              >
-                                移除
-                              </button>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
+
+                        <div className="whitelist-display">
+                          <h3>当前白名单 ({whitelist.length})</h3>
+
+                          {/* 新增搜索框 */}
+                          <div className="search-container">
+                            <input
+                              type="text"
+                              placeholder="🔍 输入地址片段进行搜索..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="search-input"
+                            />
+                            <div className="search-tip">
+                              支持模糊搜索，不区分大小写
+                            </div>
+                          </div>
+                          <ul>
+                            {whitelist
+                              .filter((addr) =>
+                                addr
+                                  .toLowerCase()
+                                  .includes(searchTerm.toLowerCase())
+                              )
+                              .map((address, index) => (
+                                <li key={index}>
+                                  <div className="address-display">
+                                    {/* 新增完整地址展示 */}
+                                    <div className="full-address">
+                                      {address}
+                                    </div>
+                                    {/* 保留原有格式化地址 */}
+                                    <div className="formatted-address">
+                                      {formatAddress(address)}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      handleRemoveFromWhitelist(address)
+                                    }
+                                    className="remove-button"
+                                  >
+                                    移除
+                                  </button>
+                                </li>
+                              ))}
+                          </ul>
+                        </div>
+                      </>
+                    ) : (
+                      <p>🔗 请连接合约后管理投票流程</p>
+                    )}
                   </div>
                 )}
-                {/*
-              管理员信息展示模块注释
-              <div className="admin-info">
-                <h3>Admin Keys (Demo Only)</h3>
-                <p>Public Key: {adminKey.publicKey}</p>
-                <p>Private Key: {adminKey.privateKey}</p>
-              </div>      
-              */}
               </div>
             }
           />
+
           <Route path="/logs" element={<Logs />} />
           <Route path="/candidates" element={<Candidates />} />
         </Routes>

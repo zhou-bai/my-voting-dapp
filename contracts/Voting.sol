@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
 contract EncryptedVoting {
-    address public admin;
+    address public admin = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     uint256 public immutable p;
     uint256 public immutable g;
-
     struct Candidate {
         uint256 c1;
         uint256 c2;
     }
-
     Candidate[] public candidates;
     mapping(address => bool) public voters;
     mapping(address => bool) public whitelist;
     bool public votingEnded;
-
     // 初始化白名单
     constructor(
         uint256 _candidateCount,
@@ -23,14 +19,12 @@ contract EncryptedVoting {
         uint256 _g,
         address[] memory _predefinedWhitelist
     ) {
-        admin = msg.sender;
+        // 管理员地址已硬编码，无需再通过msg.sender设置
         p = _p;
         g = _g;
-
         for (uint i = 0; i < _candidateCount; i++) {
             candidates.push(Candidate(1, 1));
         }
-
         // 初始化白名单时去重
         for (uint i = 0; i < _predefinedWhitelist.length; i++) {
             address addr = _predefinedWhitelist[i];
@@ -38,7 +32,6 @@ contract EncryptedVoting {
             whitelist[addr] = true;
         }
     }
-
     event Voted(
         address indexed voter,
         uint256 timestamp,

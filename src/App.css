@@ -598,3 +598,58 @@ tr:nth-child(even) {
   border-radius: 4px;
   font-family: monospace;
 }
+
+.contract-manager {
+  margin-left: 20px;
+  position: relative;
+}
+
+.contract-controls {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-color);
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.contract-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.saved-contracts select {
+  width: 100%;
+  padding: 8px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+/* 部署状态样式 */
+.deploy-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: var(--info-bg);
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+/* 合约地址列表优化 */
+.saved-contracts select option {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+}
+
+.saved-contracts select option::after {
+  content: attr(data-status);
+  color: #666;
+  font-size: 0.9em;
+}
