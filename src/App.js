@@ -42,6 +42,35 @@ function App() {
   //    return crypto.generateKeyPair();
   //  });
 
+  //部署合约
+  const [voteCount, setVoteCount] = useState("");
+  const [generatedWhitelist, setGeneratedWhitelist] = useState([]);
+  const [deploying, setDeploying] = useState(false);
+
+  const PREDEFINED_ADDRESSES = [
+    // 确保每个地址已经是校验和格式
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+    "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+    "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+    "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+    "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+    "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+    "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+    "0x71bE63f3384f5fb98995898A86B02Fb2426c5788",
+    "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+    "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec",
+    "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097",
+    "0xcd3B766CCDd6AE721141F452C550Ca635964ce71",
+    "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
+    "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E",
+    "0xdD2FD4581271e230360230F9337D5c0430Bf44C0",
+    "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+  ];
+
   const chartData = {
     labels: Array.from({ length: candidates }, (_, i) => `候选人 ${i + 1}`),
     datasets: [
@@ -131,6 +160,77 @@ function App() {
       console.error("白名单更新异常:", error);
     }
   }, [contract]);
+
+  //随机生成白名单函数
+  const generateRandomWhitelist = () => {
+    const count = parseInt(voteCount);
+    if (isNaN(count)) {
+      alert("请输入有效的数字");
+      return;
+    }
+    if (count < 1 || count > 19) {
+      alert("投票人数必须在1到19之间");
+      return;
+    }
+
+    const shuffled = [...PREDEFINED_ADDRESSES].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, count);
+    setGeneratedWhitelist([...new Set(selected)]);
+  };
+
+  //部署智能合约函数
+  const deployNewContract = async () => {
+    if (!window.ethereum) {
+      alert("请安装MetaMask");
+      return;
+    }
+    if (generatedWhitelist.length === 0) {
+      alert("请先生成白名单");
+      return;
+    }
+
+    setDeploying(true);
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const contractFactory = new ethers.ContractFactory(
+        VotingABI.abi,
+        VotingABI.bytecode,
+        signer
+      );
+
+      const contract = await contractFactory.deploy(
+        3, // 候选人数
+        "7919", // p
+        "2", // g
+        generatedWhitelist
+      );
+
+      await contract.waitForDeployment();
+      const address = await contract.getAddress();
+
+      // 更新前端状态
+      setContract(contract);
+      setPublicKey(null);
+      setResults([]);
+      setVotingEnded(false);
+
+      // 重新获取公钥
+      const response = await fetch("http://localhost:3001/api/public-key");
+      const data = await response.json();
+      setPublicKey(data.publicKey);
+
+      alert(`新合约部署成功！地址：${address}`);
+      setGeneratedWhitelist([]);
+      setVoteCount("");
+    } catch (error) {
+      console.error("部署失败:", error);
+      alert(`部署失败: ${error.message}`);
+    } finally {
+      setDeploying(false);
+    }
+  };
 
   // 账户切换处理
   const handleSwitchAccount = async () => {
@@ -576,16 +676,56 @@ function App() {
                 {/* 新增白名单管理面板 */}
                 {isAdmin() && (
                   <div className="admin-panel">
-                    <div className="admin-panel">
-                      <h2>Administration</h2>
-                      <button
-                        onClick={endVoting}
-                        className="admin-button"
-                        disabled={votingEnded}
-                      >
-                        {votingEnded ? "投票已结束" : "结束投票"}
-                      </button>
+                    <h2>Administration</h2>
+
+                    {/* 新增部署区块 */}
+                    <div className="deploy-section">
+                      <h3>创建新投票</h3>
+
+                      <div className="deploy-control">
+                        <input
+                          type="number"
+                          min="1"
+                          max="19"
+                          value={voteCount}
+                          onChange={(e) => setVoteCount(e.target.value)}
+                          placeholder="输入投票人数 (1-19)"
+                          disabled={deploying}
+                        />
+                        <button
+                          onClick={generateRandomWhitelist}
+                          disabled={deploying}
+                        >
+                          生成白名单
+                        </button>
+                      </div>
+
+                      {generatedWhitelist.length > 0 && (
+                        <div className="whitelist-preview">
+                          <h4>
+                            生成的白名单地址 ({generatedWhitelist.length} 个):
+                          </h4>
+                          <ul>
+                            {generatedWhitelist.map((addr) => (
+                              <li key={addr}>{formatAddress(addr)}</li>
+                            ))}
+                          </ul>
+                          <button
+                            onClick={deployNewContract}
+                            disabled={deploying}
+                          >
+                            {deploying ? "部署中..." : "部署新合约"}
+                          </button>
+                        </div>
+                      )}
                     </div>
+                    <button
+                      onClick={endVoting}
+                      className="admin-button"
+                      disabled={votingEnded}
+                    >
+                      {votingEnded ? "投票已结束" : "结束投票"}
+                    </button>
                     <h2>白名单管理</h2>
                     <div className="whitelist-control">
                       <input

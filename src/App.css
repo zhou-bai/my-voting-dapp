@@ -555,3 +555,46 @@ tr:nth-child(even) {
   text-align: center;
   padding: 40px;
 }
+
+.deploy-section {
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.deploy-control {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.deploy-control input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.whitelist-preview {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.whitelist-preview ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.whitelist-preview li {
+  padding: 0.5rem;
+  margin: 0.25rem 0;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  font-family: monospace;
+}
