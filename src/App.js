@@ -52,6 +52,8 @@ function App() {
   const [generatedWhitelist, setGeneratedWhitelist] = useState([]);
   const [deploying, setDeploying] = useState(false);
 
+  const [showManager, setShowManager] = useState(false);
+
   const PREDEFINED_ADDRESSES = [
     // 确保每个地址已经是校验和格式
     "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -447,6 +449,25 @@ function App() {
     }
   };
 
+  // 新增删除函数
+  const handleDeleteContract = (addressToDelete) => {
+    if (savedContracts.length <= 1) {
+      alert("至少需要保留一个合约地址");
+      return;
+    }
+    if (window.confirm("确定要删除这个合约地址吗？")) {
+      const updated = savedContracts.filter((addr) => addr !== addressToDelete);
+      setSavedContracts(updated);
+      localStorage.setItem("contractHistory", JSON.stringify(updated));
+
+      // 如果删除的是当前选中的合约，切换到第一个
+      if (contractAddress === addressToDelete) {
+        setContractAddress(updated[0]);
+        setContract(updated[0]);
+      }
+    }
+  };
+
   // 检查是否是管理员
   const isAdmin = () => {
     return currentAccount.toLowerCase() === adminAddress.toLowerCase();
@@ -552,6 +573,12 @@ function App() {
       setNewContractInput("");
     };
 
+    // 新增的复制按钮点击处理
+    const copyToClipboard = (text) => {
+      navigator.clipboard.writeText(text);
+      alert("地址已复制到剪贴板");
+    };
+
     const switchContract = async (address) => {
       if (!ethers.isAddress(address)) return;
 
@@ -583,9 +610,21 @@ function App() {
         <button onClick={() => setShowManager(!showManager)}>
           {showManager ? "隐藏合约管理" : "管理智能合约"}
         </button>
-
         {showManager && (
           <div className="contract-controls">
+            {/* 新增当前合约显示 */}
+            <div className="current-contract">
+              <p>当前合约地址：</p>
+              <div className="address-row">
+                <code>{contractAddress}</code>
+                <button
+                  onClick={() => copyToClipboard(contractAddress)}
+                  className="copy-btn"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
             <div className="contract-input">
               <input
                 type="text"
@@ -595,20 +634,38 @@ function App() {
               />
               <button onClick={handleAddContract}>添加</button>
             </div>
-
             <div className="saved-contracts">
-              <h4>已保存合约：</h4>
-              <select
-                value={contractAddress}
-                onChange={(e) => switchContract(e.target.value)}
-              >
+              <h4>已保存合约 ({savedContracts.length})：</h4>
+              <div className="contract-list">
                 {savedContracts.map((addr, i) => (
-                  <option key={i} value={addr}>
-                    {`${addr.slice(0, 6)}...${addr.slice(-4)}`}
-                    {i === 0 && " (默认)"}
-                  </option>
+                  <div
+                    key={addr}
+                    className={`contract-item ${
+                      contractAddress === addr ? "active" : ""
+                    }`}
+                  >
+                    <div
+                      className="contract-info"
+                      onClick={() => switchContract(addr)}
+                    >
+                      <span className="address-short">
+                        {`${addr.slice(0, 6)}...${addr.slice(-4)}`}
+                      </span>
+                      {i === 0 && <span className="default-tag">(默认)</span>}
+                    </div>
+                    <button
+                      className="delete-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteContract(addr);
+                      }}
+                      disabled={savedContracts.length <= 1}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
           </div>
         )}

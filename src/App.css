@@ -750,3 +750,54 @@ tr:nth-child(even) {
   width: 280px;
   z-index: 999;
 }
+
+/* 合约列表样式 */
+.contract-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+.contract-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+.contract-item:hover {
+  background: var(--hover-bg);
+}
+.contract-item.active {
+  background: var(--primary-hover);
+}
+.contract-info {
+  flex: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.address-short {
+  font-family: monospace;
+}
+.default-tag {
+  font-size: 0.8em;
+  color: var(--secondary-text);
+}
+.delete-button {
+  background: none;
+  border: none;
+  color: var(--error-color);
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
