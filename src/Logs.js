@@ -3,6 +3,7 @@ import { Contract, BrowserProvider } from "ethers";
 import VotingABI from "./abis/Voting.json";
 import { ClipLoader } from "react-spinners";
 import "./App.css";
+import { ethers } from "ethers";
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
@@ -27,27 +28,39 @@ const Logs = () => {
   // 修改加载日志部分
 
   // 初始化合约连接
+
+  // 从localStorage获取合约地址
+  const getContractAddress = () => {
+    const history = JSON.parse(localStorage.getItem("contractHistory"));
+    return history?.[0] || "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  };
   useEffect(() => {
     const initContract = async () => {
       if (window.ethereum) {
         try {
           const provider = new BrowserProvider(window.ethereum);
-          const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+          const address = getContractAddress();
+
+          // 添加格式校验
+          const checksumAddress = ethers.getAddress(address);
+
           const contractInstance = new Contract(
-            contractAddress,
+            checksumAddress,
             VotingABI.abi,
             provider
           );
+
+          // 验证合约是否有效
+          await contractInstance.votingEnded();
           setContract(contractInstance);
         } catch (error) {
-          console.error("合约初始化失败:", error);
+          console.error("日志合约连接失败:", error);
+          setContract(null);
         }
       }
     };
-
     initContract();
   }, []);
-
   // 当合约变化时加载数据
   useEffect(() => {
     const loadLogs = async () => {

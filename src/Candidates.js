@@ -3,6 +3,7 @@ import { Contract, BrowserProvider } from "ethers";
 import VotingABI from "./abis/Voting.json";
 import { ClipLoader } from "react-spinners";
 import "./App.css";
+import { ethers } from "ethers";
 
 const Candidates = () => {
   // 候选人数据（更新图片路径）
@@ -37,25 +38,40 @@ const Candidates = () => {
   const [loading, setLoading] = useState(true);
   const [decrypting, setDecrypting] = useState(false);
 
-  // 初始化合约连接
+  // 从localStorage获取合约地址
+  const getContractAddress = () => {
+    const saved = JSON.parse(localStorage.getItem("contractHistory"));
+    return saved && saved.length > 0
+      ? saved[0]
+      : "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  };
+  // 初始化合约连接（修改后）
   useEffect(() => {
     const initContract = async () => {
       if (window.ethereum) {
         try {
           const provider = new BrowserProvider(window.ethereum);
-          const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+          const contractAddress = getContractAddress(); // 动态获取地址
+
+          // 增加地址验证
+          if (!ethers.isAddress(contractAddress)) {
+            throw new Error("非法合约地址");
+          }
           const contractInstance = new Contract(
             contractAddress,
             VotingABI.abi,
             provider
           );
+
+          // 验证合约有效性
+          await contractInstance.admin();
           setContract(contractInstance);
         } catch (error) {
-          console.error("合约初始化失败:", error);
+          console.error("合约连接失败:", error);
+          setContract(null);
         }
       }
     };
-
     initContract();
   }, []);
 
