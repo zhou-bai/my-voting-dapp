@@ -35,6 +35,9 @@ function App() {
 
   const [darkMode, setDarkMode] = useState(false);
 
+  const [showDeploy, setShowDeploy] = useState(false);
+  const [showWhitelist, setShowWhitelist] = useState(false);
+
   //白名单查询
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -644,7 +647,6 @@ function App() {
             <span className="nav-icon">👥</span>
             <span className="nav-text">候选人</span>
           </Link>
-          <ContractManager />
         </nav>
 
         <Routes>
@@ -680,24 +682,38 @@ function App() {
                   )}
                 </div>
 
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
+                {/* 添加这个新div包裹三个面板 */}
+                <div
+                  className="control-panels"
                   style={{
                     position: "fixed",
                     top: 20,
-                    left: 20,
+                    left: 30, // 调整位置避免重叠
                     zIndex: 1000,
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    background: "transparent",
-                    color: "var(--text-color)",
-                    border: "2px solid var(--text-color)",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
+                    display: "flex",
+                    gap: "10px",
                   }}
                 >
-                  {darkMode ? "🌞 亮色模式" : "🌙 深色模式"}
-                </button>
+                  {/* 深色模式按钮保持原样 */}
+                  <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      background: "transparent",
+                      color: "var(--text-color)",
+                      border: "2px solid var(--text-color)",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    {darkMode ? "🌞 亮色模式" : "🌙 深色模式"}
+                  </button>
+                  {/* 指引面板 */}
+                  {/* 合约管理面板 */}
+                  <ContractManager />
+                </div>
+
                 {/* <div className="dashboard">
                 <div className="info-card">
                   <h3>💰 余额</h3>
@@ -795,134 +811,162 @@ function App() {
                 {/* 管理员面板 */}
                 {isAdmin() && (
                   <div className="admin-panel">
-                    <h2>Administration</h2>
+                    <h2>管理员控制台</h2>
+                    {/* 新投票创建区块 */}
+                    <div className="admin-section">
+                      <button
+                        className="toggle-button"
+                        onClick={() => setShowDeploy(!showDeploy)}
+                      >
+                        🚀 {showDeploy ? "收起" : "创建新投票"}
+                      </button>
 
-                    {/* 部署新合约部分始终显示 */}
-                    {/* 新增部署区块 */}
-                    <div className="deploy-section">
-                      <h3>创建新投票</h3>
+                      {showDeploy && (
+                        <div className="section-collapsible">
+                          <div className="deploy-section">
+                            <h3>创建新投票</h3>
+                            <div className="deploy-section">
+                              <h3>创建新投票</h3>
 
-                      <div className="deploy-control">
-                        <input
-                          type="number"
-                          min="1"
-                          max="19"
-                          value={voteCount}
-                          onChange={(e) => setVoteCount(e.target.value)}
-                          placeholder="输入投票人数 (1-19)"
-                          disabled={deploying}
-                        />
-                        <button
-                          onClick={generateRandomWhitelist}
-                          disabled={deploying}
-                        >
-                          生成白名单
-                        </button>
-                      </div>
-                      {/* 新增部署状态展示 */}
-                      {deploying && (
-                        <div className="deploy-status">
-                          <ClipLoader size={20} />
-                          <span>合约部署中...（可能需要15-30秒）</span>
-                        </div>
-                      )}
+                              <div className="deploy-control">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="19"
+                                  value={voteCount}
+                                  onChange={(e) => setVoteCount(e.target.value)}
+                                  placeholder="输入投票人数 (1-19)"
+                                  disabled={deploying}
+                                />
+                                <button
+                                  onClick={generateRandomWhitelist}
+                                  disabled={deploying}
+                                >
+                                  生成白名单
+                                </button>
+                              </div>
+                              {/* 新增部署状态展示 */}
+                              {deploying && (
+                                <div className="deploy-status">
+                                  <ClipLoader size={20} />
+                                  <span>合约部署中...（可能需要15-30秒）</span>
+                                </div>
+                              )}
 
-                      {generatedWhitelist.length > 0 && (
-                        <div className="whitelist-preview">
-                          <h4>
-                            生成的白名单地址 ({generatedWhitelist.length} 个):
-                          </h4>
-                          <ul>
-                            {generatedWhitelist.map((addr) => (
-                              <li key={addr}>{formatAddress(addr)}</li>
-                            ))}
-                          </ul>
-                          <button
-                            onClick={deployNewContract}
-                            disabled={deploying}
-                          >
-                            {deploying ? "部署中..." : "部署新合约"}
-                          </button>
+                              {generatedWhitelist.length > 0 && (
+                                <div className="whitelist-preview">
+                                  <h4>
+                                    生成的白名单地址 (
+                                    {generatedWhitelist.length} 个):
+                                  </h4>
+                                  <ul>
+                                    {generatedWhitelist.map((addr) => (
+                                      <li key={addr}>{formatAddress(addr)}</li>
+                                    ))}
+                                  </ul>
+                                  <button
+                                    onClick={deployNewContract}
+                                    disabled={deploying}
+                                  >
+                                    {deploying ? "部署中..." : "部署新合约"}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
+                    {/* 白名单管理区块 */}
+                    <div className="admin-section">
+                      <button
+                        className="toggle-button"
+                        onClick={() => setShowWhitelist(!showWhitelist)}
+                      >
+                        📋 {showWhitelist ? "收起" : "管理白名单"}
+                      </button>
+                      {showWhitelist && (
+                        <div className="section-collapsible">
+                          <div className="whitelist-management">
+                            <h3>白名单管理</h3>
+                            <div className="whitelist-control">
+                              <input
+                                type="text"
+                                value={whitelistAddress}
+                                onChange={(e) =>
+                                  setWhitelistAddress(e.target.value)
+                                }
+                                placeholder="输入以太坊地址"
+                              />
+                              <button onClick={handleAddToWhitelist}>
+                                添加地址
+                              </button>
+                            </div>
 
-                    {/* 现有合约管理功能 */}
-                    {contract ? (
-                      <>
-                        <button
-                          onClick={endVoting}
-                          className="admin-button"
-                          disabled={votingEnded}
-                        >
-                          {votingEnded ? "投票已结束" : "结束投票"}
-                        </button>
-                        {/* 白名单管理 */}
-                        <h2>白名单管理</h2>
-                        <div className="whitelist-control">
-                          <input
-                            type="text"
-                            value={whitelistAddress}
-                            onChange={(e) =>
-                              setWhitelistAddress(e.target.value)
-                            }
-                            placeholder="输入以太坊地址"
-                          />
-                          <button onClick={handleAddToWhitelist}>
-                            添加地址
-                          </button>
-                        </div>
+                            <div className="whitelist-display">
+                              <h3>当前白名单 ({whitelist.length})</h3>
 
-                        <div className="whitelist-display">
-                          <h3>当前白名单 ({whitelist.length})</h3>
-
-                          {/* 新增搜索框 */}
-                          <div className="search-container">
-                            <input
-                              type="text"
-                              placeholder="🔍 输入地址片段进行搜索..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="search-input"
-                            />
-                            <div className="search-tip">
-                              支持模糊搜索，不区分大小写
+                              {/* 新增搜索框 */}
+                              <div className="search-container">
+                                <input
+                                  type="text"
+                                  placeholder="🔍 输入地址片段进行搜索..."
+                                  value={searchTerm}
+                                  onChange={(e) =>
+                                    setSearchTerm(e.target.value)
+                                  }
+                                  className="search-input"
+                                />
+                                <div className="search-tip">
+                                  支持模糊搜索，不区分大小写
+                                </div>
+                              </div>
+                              <ul>
+                                {whitelist
+                                  .filter((addr) =>
+                                    addr
+                                      .toLowerCase()
+                                      .includes(searchTerm.toLowerCase())
+                                  )
+                                  .map((address, index) => (
+                                    <li key={index}>
+                                      <div className="address-display">
+                                        {/* 新增完整地址展示 */}
+                                        <div className="full-address">
+                                          {address}
+                                        </div>
+                                        {/* 保留原有格式化地址 */}
+                                        <div className="formatted-address">
+                                          {formatAddress(address)}
+                                        </div>
+                                      </div>
+                                      <button
+                                        onClick={() =>
+                                          handleRemoveFromWhitelist(address)
+                                        }
+                                        className="remove-button"
+                                      >
+                                        移除
+                                      </button>
+                                    </li>
+                                  ))}
+                              </ul>
                             </div>
                           </div>
-                          <ul>
-                            {whitelist
-                              .filter((addr) =>
-                                addr
-                                  .toLowerCase()
-                                  .includes(searchTerm.toLowerCase())
-                              )
-                              .map((address, index) => (
-                                <li key={index}>
-                                  <div className="address-display">
-                                    {/* 新增完整地址展示 */}
-                                    <div className="full-address">
-                                      {address}
-                                    </div>
-                                    {/* 保留原有格式化地址 */}
-                                    <div className="formatted-address">
-                                      {formatAddress(address)}
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() =>
-                                      handleRemoveFromWhitelist(address)
-                                    }
-                                    className="remove-button"
-                                  >
-                                    移除
-                                  </button>
-                                </li>
-                              ))}
-                          </ul>
                         </div>
-                      </>
-                    ) : (
-                      <p>🔗 请连接合约后管理投票流程</p>
+                      )}
+                    </div>
+                    {/* 投票管理区块 */}
+                    {contract && (
+                      <div className="admin-section">
+                        <button
+                          className="toggle-button"
+                          onClick={endVoting}
+                          disabled={votingEnded}
+                        >
+                          ⏱️ {votingEnded ? "投票已结束" : "结束当前投票"}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
