@@ -801,3 +801,70 @@ tr:nth-child(even) {
   cursor: not-allowed;
 }
 
+/* 在App.css中添加 */
+.avatar-container {
+  position: relative;
+}
+
+.candidate-id {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+.expert-tag {
+  margin: 10px 0;
+}
+
+.tag-list {
+  display: flex;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.tag {
+  background: #f0f4f8;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e0e7ff;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.progress {
+  height: 100%;
+  background: #4f46e5;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.voting-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #059669;
+}
+
+.live-indicator {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.5; transform: scale(0.9); }
+}
