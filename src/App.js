@@ -12,7 +12,8 @@ import Candidates from "./Candidates";
 
 function App() {
   const [contract, setContract] = useState(null); // 合约实例
-  const [candidates] = useState(3); // 候选人数量
+  const [candidates, setCandidates] = useState(5); // -> 改为空状态
+  const [candidateCount, setCandidateCount] = useState("3");
   const [selected, setSelected] = useState(0); // 用户选择的候选人
   const [results, setResults] = useState([]); // 解密后的投票结果
   const [votingEnded, setVotingEnded] = useState(false); // 投票结束状态
@@ -115,6 +116,9 @@ function App() {
       // 添加合约验证
       const admin = await contractInstance.admin();
       setAdminAddress(admin);
+      const count = await contractInstance.getCandidateCount();
+      setCandidates(parseInt(count.toString()));
+
       return contractInstance;
     } catch (e) {
       console.error("合约连接失败:", e);
@@ -210,6 +214,11 @@ function App() {
       alert("请先生成白名单");
       return;
     }
+    const count = parseInt(candidateCount);
+    if (isNaN(count) || count < 1 || count > 10) {
+      alert("候选人数量需为1-10之间的整数");
+      return;
+    }
 
     setDeploying(true);
     try {
@@ -223,7 +232,7 @@ function App() {
       );
 
       const contract = await contractFactory.deploy(
-        3, // 候选人数
+        count, // 候选人数
         "7919", // p
         "2", // g
         generatedWhitelist
@@ -326,6 +335,22 @@ function App() {
     // 仅在首次加载时获取公钥
     fetchPublicKey();
   }, []); // 注意空依赖数组确保只执行一次
+
+  //获取候选人数量
+  // 新增候选人数量获取逻辑
+  useEffect(() => {
+    const fetchCandidateCount = async () => {
+      if (contract) {
+        try {
+          const count = await contract.getCandidateCount();
+          setCandidates(parseInt(count.toString()));
+        } catch (error) {
+          console.error("获取候选人数量失败:", error);
+        }
+      }
+    };
+    fetchCandidateCount();
+  }, [contract]); // 当合约变化时重新获取
 
   //深色模式
   useEffect(() => {
@@ -884,7 +909,19 @@ function App() {
                             <h3>创建新投票</h3>
                             <div className="deploy-section">
                               <h3>创建新投票</h3>
-
+                              <div className="deploy-control">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="10"
+                                  value={candidateCount}
+                                  onChange={(e) =>
+                                    setCandidateCount(e.target.value)
+                                  }
+                                  placeholder="候选人数 (1-10)"
+                                  disabled={deploying}
+                                />
+                              </div>
                               <div className="deploy-control">
                                 <input
                                   type="number"

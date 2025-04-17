@@ -95,4 +95,7 @@ contract EncryptedVoting {
         }
         return (c1Results, c2Results);
     }
+    function getCandidateCount() public view returns (uint256) {
+        return candidates.length;
+    }
 }
