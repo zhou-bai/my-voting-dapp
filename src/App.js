@@ -55,6 +55,9 @@ function App() {
 
   const [showManager, setShowManager] = useState(false);
 
+  //候选人信息
+  const [candidatesData, setCandidatesData] = useState([]);
+
   const PREDEFINED_ADDRESSES = [
     // 确保每个地址已经是校验和格式
     "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -210,62 +213,61 @@ function App() {
       alert("请安装MetaMask");
       return;
     }
+
     if (generatedWhitelist.length === 0) {
       alert("请先生成白名单");
       return;
     }
-    const count = parseInt(candidateCount);
-    if (isNaN(count) || count < 1 || count > 10) {
-      alert("候选人数量需为1-10之间的整数");
+    // 验证候选人数据
+    if (candidatesData.some((c) => !c.name.trim() || !c.description.trim())) {
+      alert("请填写所有候选人的完整信息");
       return;
     }
-
     setDeploying(true);
     try {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-
+      // 构造构造函数参数
+      const names = candidatesData.map((c) => c.name);
+      const descriptions = candidatesData.map((c) => c.description);
+      const predefinedP = "7919"; // 示例质数
+      const predefinedG = "7"; // 示例生成元
       const contractFactory = new ethers.ContractFactory(
         VotingABI.abi,
         VotingABI.bytecode,
         signer
       );
-
+      // 修正：使用正确参数顺序
       const contract = await contractFactory.deploy(
-        count, // 候选人数
-        "7919", // p
-        "2", // g
-        generatedWhitelist
+        names, // 候选人姓名数组
+        descriptions, // 候选人描述数组
+        predefinedP, // 大质数 p
+        predefinedG, // 生成元 g
+        generatedWhitelist // 预定义白名单
+      );
+      await contract.waitForDeployment();
+
+      // 删除原有冗余的候选人添加操作
+      const address = await contract.getAddress();
+
+      // 保存合约地址（优化版本）
+      setSavedContracts((prev) =>
+        [address, ...prev.filter((a) => a !== address)].slice(0, 10)
+      );
+      localStorage.setItem(
+        "contractHistory",
+        JSON.stringify([address, ...savedContracts])
       );
 
-      await contract.waitForDeployment();
-      const address = await contract.getAddress();
-      // 新增：将合约地址加入列表（防重复）
-      const updatedContracts = Array.from(
-        new Set([address, ...savedContracts])
-      ).slice(0, 10); // 最多保留10条记录
-
-      setSavedContracts(updatedContracts);
-      localStorage.setItem("contractHistory", JSON.stringify(updatedContracts));
-      setContractAddress(address); // 自动切换到新合约
-
-      // 更新前端状态
+      // 更新状态
+      setContractAddress(address);
       setContract(contract);
-      setPublicKey(null);
-      setResults([]);
-      setVotingEnded(false);
-
-      // 重新获取公钥
-      const response = await fetch("http://localhost:3001/api/public-key");
-      const data = await response.json();
-      setPublicKey(data.publicKey);
-
-      alert(`新合约部署成功！地址：${address}`);
       setGeneratedWhitelist([]);
-      setVoteCount("");
+
+      alert(`合约部署成功！地址：${address}`);
     } catch (error) {
       console.error("部署失败:", error);
-      alert(`部署失败: ${error.message}`);
+      alert(`部署失败: ${error.shortMessage || error.message}`);
     } finally {
       setDeploying(false);
     }
@@ -501,7 +503,16 @@ function App() {
   //处理投票提交
   const handleVote = async () => {
     if (!contract) return;
-
+    // 检测用户地址
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+    // 增加白名单检查
+    const isWhitelisted = await contract.whitelist(userAddress);
+    if (!isWhitelisted) {
+      alert("您不在投票白名单中，无法参与投票！");
+      return;
+    }
     const crypto = new VotingCrypto();
     // 创建投票向量（选中的为1，其他为0）
     const mList = new Array(candidates).fill(0);
@@ -921,6 +932,73 @@ function App() {
                                   placeholder="候选人数 (1-10)"
                                   disabled={deploying}
                                 />
+                              </div>
+                              {/* 候选人信息收集区块 */}
+                              <div className="candidates-data-entry">
+                                <h4>候选人信息设置（{candidateCount}人）</h4>
+                                {Array.from({ length: candidateCount }).map(
+                                  (_, index) => (
+                                    <div key={index} className="candidate-form">
+                                      <div className="form-header">
+                                        <span>候选人 #{index + 1}</span>
+                                        {index === 0 && (
+                                          <span className="example">
+                                            （示例）
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div className="input-group">
+                                        <label>
+                                          <span className="label-text">
+                                            姓名
+                                          </span>
+                                          <input
+                                            type="text"
+                                            placeholder="例如：张三"
+                                            value={
+                                              candidatesData[index]?.name || ""
+                                            }
+                                            onChange={(e) =>
+                                              setCandidatesData((prev) => {
+                                                const newData = [...prev];
+                                                newData[index] = {
+                                                  ...newData[index],
+                                                  name: e.target.value,
+                                                };
+                                                return newData;
+                                              })
+                                            }
+                                          />
+                                        </label>
+                                      </div>
+                                      <div className="input-group">
+                                        <label>
+                                          <span className="label-text">
+                                            简介
+                                          </span>
+                                          <textarea
+                                            placeholder="例如：区块链安全专家，10年安全审计经验"
+                                            value={
+                                              candidatesData[index]
+                                                ?.description || ""
+                                            }
+                                            onChange={(e) =>
+                                              setCandidatesData((prev) => {
+                                                const newData = [...prev];
+                                                newData[index] = {
+                                                  ...newData[index],
+                                                  description: e.target.value,
+                                                };
+                                                return newData;
+                                              })
+                                            }
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  )
+                                )}
                               </div>
                               <div className="deploy-control">
                                 <input

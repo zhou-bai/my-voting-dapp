@@ -1,43 +1,90 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 contract EncryptedVoting {
-    address public admin = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address public immutable admin;
     uint256 public immutable p;
     uint256 public immutable g;
     struct Candidate {
+        string name; // 新增名字字段
+        string description; // 新增描述字段
         uint256 c1;
         uint256 c2;
     }
+
     Candidate[] public candidates;
     mapping(address => bool) public voters;
     mapping(address => bool) public whitelist;
     bool public votingEnded;
-    // 初始化白名单
-    constructor(
-        uint256 _candidateCount,
-        uint256 _p,
-        uint256 _g,
-        address[] memory _predefinedWhitelist
-    ) {
-        // 管理员地址已硬编码，无需再通过msg.sender设置
-        p = _p;
-        g = _g;
-        for (uint i = 0; i < _candidateCount; i++) {
-            candidates.push(Candidate(1, 1));
-        }
-        // 初始化白名单时去重
-        for (uint i = 0; i < _predefinedWhitelist.length; i++) {
-            address addr = _predefinedWhitelist[i];
-            require(!whitelist[addr], "Duplicate address in whitelist");
-            whitelist[addr] = true;
-        }
-    }
+    event CandidateAdded(
+        uint256 indexed candidateId,
+        string name,
+        string description
+    );
     event Voted(
         address indexed voter,
         uint256 timestamp,
         uint256[] c1List,
         uint256[] c2List
     );
+    constructor(
+        string[] memory _names, // 使用名字数组
+        string[] memory _descriptions, // 使用描述数组
+        uint256 _p,
+        uint256 _g,
+        address[] memory _predefinedWhitelist
+    ) {
+        require(
+            _names.length == _descriptions.length,
+            "Name and description array mismatch"
+        );
+        require(_names.length > 0, "At least one candidate required");
+
+        admin = msg.sender; // 改为使用部署者地址
+        p = _p;
+        g = _g;
+        // 初始化候选人
+        for (uint i = 0; i < _names.length; i++) {
+            _addCandidate(_names[i], _descriptions[i]);
+        }
+        // 初始化白名单
+        for (uint i = 0; i < _predefinedWhitelist.length; i++) {
+            address addr = _predefinedWhitelist[i];
+            require(!whitelist[addr], "Duplicate address in whitelist");
+            whitelist[addr] = true;
+        }
+    }
+    // 新增内部方法添加候选人
+    function _addCandidate(
+        string memory _name,
+        string memory _description
+    ) internal {
+        candidates.push(
+            Candidate({
+                name: _name,
+                description: _description,
+                c1: 1, // 初始化加密参数
+                c2: 1
+            })
+        );
+        emit CandidateAdded(candidates.length - 1, _name, _description);
+    }
+    // 新增获取候选人详细信息方法
+    function getCandidateInfo(
+        uint256 _candidateId
+    )
+        external
+        view
+        returns (
+            string memory name,
+            string memory description,
+            uint256 c1,
+            uint256 c2
+        )
+    {
+        require(_candidateId < candidates.length, "Invalid candidate ID");
+        Candidate storage c = candidates[_candidateId];
+        return (c.name, c.description, c.c1, c.c2);
+    }
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Admin only");
