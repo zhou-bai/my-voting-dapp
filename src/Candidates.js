@@ -13,6 +13,73 @@ const Candidates = () => {
   const [decrypting, setDecrypting] = useState(false);
   // 修改为存储完整候选人数据
   const [candidatesData, setCandidatesData] = useState([]);
+  const [showManager, setShowManager] = useState(false);
+  const [contractAddress, setContractAddress] = useState(() => {
+    const saved = localStorage.getItem("contractHistory");
+    return saved
+      ? JSON.parse(saved)[0]
+      : "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  });
+  const [savedContracts, setSavedContracts] = useState(() => {
+    return JSON.parse(localStorage.getItem("contractHistory")) || [];
+  });
+  const [newContractInput, setNewContractInput] = useState("");
+
+  // 新增合约管理方法
+  const handleAddContract = () => {
+    if (!ethers.isAddress(newContractInput)) {
+      alert("请输入有效的合约地址");
+      return;
+    }
+    const updated = [...new Set([...savedContracts, newContractInput])];
+    setSavedContracts(updated);
+    localStorage.setItem("contractHistory", JSON.stringify(updated));
+    setNewContractInput("");
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("地址已复制到剪贴板");
+  };
+
+  const switchContract = async (address) => {
+    if (!ethers.isAddress(address)) return;
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const contractInstance = new Contract(
+        address,
+        VotingABI.abi,
+        await provider.getSigner()
+      );
+      await contractInstance.admin();
+      setContractAddress(address);
+      setContract(contractInstance);
+      // 刷新候选人数据
+      const count = await contractInstance.getCandidateCount();
+      const detailedCandidates = await fetchCandidatesData(
+        contractInstance,
+        count
+      );
+      setCandidatesData(detailedCandidates);
+    } catch (e) {
+      alert("无效的合约地址或ABI不匹配");
+    }
+  };
+
+  const handleDeleteContract = (addressToDelete) => {
+    if (savedContracts.length <= 1) {
+      alert("至少需要保留一个合约地址");
+      return;
+    }
+    if (window.confirm("确定要删除这个合约地址吗？")) {
+      const updated = savedContracts.filter((addr) => addr !== addressToDelete);
+      setSavedContracts(updated);
+      localStorage.setItem("contractHistory", JSON.stringify(updated));
+      if (contractAddress === addressToDelete) {
+        setContractAddress(updated[0]);
+      }
+    }
+  };
 
   // 从合约获取候选人数据的异步方法
   const fetchCandidatesData = async (contractInstance, count) => {
@@ -46,16 +113,8 @@ const Candidates = () => {
       if (window.ethereum) {
         try {
           const provider = new BrowserProvider(window.ethereum);
-          const saved = JSON.parse(localStorage.getItem("contractHistory"));
-          const contractAddress =
-            saved?.[0] ?? "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-
-          if (!ethers.isAddress(contractAddress)) {
-            throw new Error("非法合约地址");
-          }
-
           const contractInstance = new Contract(
-            contractAddress,
+            contractAddress, // 使用状态中的地址
             VotingABI.abi,
             provider
           );
@@ -95,7 +154,7 @@ const Candidates = () => {
       }
     };
     initContract();
-  }, []);
+  }, [contractAddress]); // 添加contractAddress作为依赖
 
   // 解密方法（保持原有逻辑）
   const decryptResults = async (c1List, c2List) => {
@@ -126,6 +185,70 @@ const Candidates = () => {
 
   return (
     <div className="container candidates-container">
+      {/* 新增合约管理面板 */}
+      <div className="contract-manager" style={{ marginBottom: "2rem" }}>
+        <button onClick={() => setShowManager(!showManager)}>
+          {showManager ? "隐藏合约管理" : "管理智能合约"}
+        </button>
+        {showManager && (
+          <div className="contract-controls">
+            <div className="current-contract">
+              <p>当前合约地址：</p>
+              <div className="address-row">
+                <code>{contractAddress}</code>
+                <button
+                  onClick={() => copyToClipboard(contractAddress)}
+                  className="copy-btn"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div className="contract-input">
+              <input
+                type="text"
+                value={newContractInput}
+                onChange={(e) => setNewContractInput(e.target.value)}
+                placeholder="输入新合约地址"
+              />
+              <button onClick={handleAddContract}>添加</button>
+            </div>
+            <div className="saved-contracts">
+              <h4>已保存合约 ({savedContracts.length})：</h4>
+              <div className="contract-list">
+                {savedContracts.map((addr, i) => (
+                  <div
+                    key={addr}
+                    className={`contract-item ${
+                      contractAddress === addr ? "active" : ""
+                    }`}
+                  >
+                    <div
+                      className="contract-info"
+                      onClick={() => switchContract(addr)}
+                    >
+                      <span className="address-short">
+                        {`${addr.slice(0, 6)}...${addr.slice(-4)}`}
+                      </span>
+                      {i === 0 && <span className="default-tag">(最新)</span>}
+                    </div>
+                    <button
+                      className="delete-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteContract(addr);
+                      }}
+                      disabled={savedContracts.length <= 1}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <h1>区块链专家候选人（{candidatesData.length}位）</h1>
 
       {loading || decrypting ? (
