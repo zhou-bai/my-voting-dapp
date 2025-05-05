@@ -42,7 +42,7 @@ function App() {
   //白名单查询
   const [searchTerm, setSearchTerm] = useState("");
 
-  //  管理员密钥对（开发演示用，实际应安全存储）
+  //  管理员密钥对（开发测试用）
   //  const [adminKey] = useState(() => {
   //    const crypto = new VotingCrypto();
   //    return crypto.generateKeyPair();
@@ -513,6 +513,12 @@ function App() {
       alert("您不在投票白名单中，无法参与投票！");
       return;
     }
+    //已投票检查
+    const hasVoted = await contract.voters(userAddress);
+    if (hasVoted) {
+      alert("您已经投过票了，无法重复投票！");
+      return;
+    }
     const crypto = new VotingCrypto();
     // 创建投票向量（选中的为1，其他为0）
     const mList = new Array(candidates).fill(0);
@@ -687,7 +693,7 @@ function App() {
                       <span className="address-short">
                         {`${addr.slice(0, 6)}...${addr.slice(-4)}`}
                       </span>
-                      {i === 0 && <span className="default-tag">(默认)</span>}
+                      {i === 0 && <span className="default-tag">(最新)</span>}
                     </div>
                     <button
                       className="delete-button"
@@ -729,7 +735,7 @@ function App() {
             }
           >
             <span className="nav-icon">📜</span>
-            <span className="nav-text">审计日志</span>
+            <span className="nav-text">投票记录</span>
           </Link>
           <Link
             to="/candidates"
