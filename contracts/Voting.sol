@@ -26,6 +26,22 @@ contract EncryptedVoting {
         uint256[] c1List,
         uint256[] c2List
     );
+    // 治理相关状态变量
+    struct Proposal {
+        string description;
+        uint256 voteCount;
+        mapping(address => bool) voters;
+        bool executed;
+    }
+
+    Proposal[] public proposals;
+    uint256 public constant MIN_VOTES_TO_PASS = 3;
+
+    // 治理事件
+    event ProposalCreated(uint256 indexed proposalId, string description);
+    event VotedOnProposal(address indexed voter, uint256 indexed proposalId);
+    event ProposalExecuted(uint256 indexed proposalId);
+
     constructor(
         string[] memory _names, // 使用名字数组
         string[] memory _descriptions, // 使用描述数组
@@ -144,5 +160,64 @@ contract EncryptedVoting {
     }
     function getCandidateCount() public view returns (uint256) {
         return candidates.length;
+    }
+    // 创建提案（仅管理员）
+    function createProposal(string memory _description) external onlyAdmin {
+        proposals.push();
+        Proposal storage newProposal = proposals[proposals.length - 1];
+        newProposal.description = _description;
+        newProposal.voteCount = 0;
+        newProposal.executed = false;
+
+        emit ProposalCreated(proposals.length - 1, _description);
+    }
+
+    // 投票（白名单用户）
+    function voteOnProposal(uint256 _proposalId) external {
+        require(_proposalId < proposals.length, "Invalid proposal ID");
+        require(whitelist[msg.sender], "Not in whitelist");
+        require(!votingEnded, "Voting ended");
+
+        Proposal storage proposal = proposals[_proposalId];
+        require(!proposal.voters[msg.sender], "Already voted");
+        require(!proposal.executed, "Proposal already executed");
+
+        proposal.voters[msg.sender] = true;
+        proposal.voteCount += 1;
+
+        emit VotedOnProposal(msg.sender, _proposalId);
+    }
+
+    // 执行提案（仅管理员）
+    function executeProposal(uint256 _proposalId) external onlyAdmin {
+        require(_proposalId < proposals.length, "Invalid proposal ID");
+
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.voteCount >= MIN_VOTES_TO_PASS, "Not enough votes");
+        require(!proposal.executed, "Already executed");
+
+        proposal.executed = true;
+
+        // 这里可以添加具体执行逻辑
+        // 例如：if (bytes(proposal.description).startsWith("CHANGE_ADMIN")) {...}
+
+        emit ProposalExecuted(_proposalId);
+    }
+
+    // 获取提案信息
+    function getProposalInfo(
+        uint256 _proposalId
+    )
+        external
+        view
+        returns (string memory description, uint256 voteCount, bool executed)
+    {
+        require(_proposalId < proposals.length, "Invalid proposal ID");
+        Proposal storage p = proposals[_proposalId];
+        return (p.description, p.voteCount, p.executed);
+    }
+
+    function getProposalCount() public view returns (uint256) {
+        return proposals.length;
     }
 }

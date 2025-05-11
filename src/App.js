@@ -9,6 +9,8 @@ import { Bar } from "react-chartjs-2";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Logs from "./Logs";
 import Candidates from "./Candidates";
+import UserProfile from "./UserProfile";
+import Governance from "./Governance";
 
 function App() {
   const [contract, setContract] = useState(null); // 合约实例
@@ -539,6 +541,7 @@ function App() {
     }
   };
 
+  //计票
   const calculateResults = async () => {
     setDecrypting(true);
     try {
@@ -745,6 +748,24 @@ function App() {
           >
             <span className="nav-icon">👥</span>
             <span className="nav-text">候选人</span>
+          </Link>
+          <Link
+            to="/profile"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            <span className="nav-icon">👤</span>
+            <span className="nav-text">个人中心</span>
+          </Link>
+          <Link
+            to="/governance"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            <span className="nav-icon">🏛️</span>
+            <span className="nav-text">社区治理</span>
           </Link>
         </nav>
 
@@ -1154,6 +1175,16 @@ function App() {
 
           <Route path="/logs" element={<Logs />} />
           <Route path="/candidates" element={<Candidates />} />
+          <Route
+            path="/profile"
+            element={
+              <UserProfile contract={contract} account={currentAccount} />
+            }
+          />
+          <Route
+            path="/governance"
+            element={<Governance contract={contract} isAdmin={isAdmin()} />}
+          />
         </Routes>
       </div>
     </Router>

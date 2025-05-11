@@ -1,7 +1,7 @@
 import bigInt from "big-integer";
 
 export class VotingCrypto {
-  // 初始化加密参数（默认使用小素数便于演示）
+  // 初始化加密参数
   constructor(p = 7919, g = 2) {
     console.log("初始化加密参数:", { p, g });
     this.p = bigInt(p);
@@ -69,7 +69,7 @@ export class VotingCrypto {
   //     throw new Error("Discrete logarithm not found");
   //   }
   // }
-  // 解密密文（使用离散对数暴力破解，仅适用于小素数）
+  // 解密密文
   decrypt(c1Sum, c2Sum, privateKey) {
     const sk = bigInt(privateKey);
     // 计算分母 y^r = c1^sk mod p
@@ -79,7 +79,7 @@ export class VotingCrypto {
     // 计算 g^m = c2 * inverse mod p
     const gSum = bigInt(c2Sum).multiply(inverse).mod(this.p);
 
-    // 暴力搜索离散对数（实际应使用Pohlig-Hellman等算法）
+    //
     let accum = bigInt(1);
     for (let i = 0; i < 10000; i++) {
       if (accum.eq(gSum)) return i;
