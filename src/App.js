@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { VotingCrypto } from "./ElGamal";
 import { BrowserProvider, Contract, ethers } from "ethers";
 import VotingABI from "./abis/Voting.json";
@@ -59,6 +59,13 @@ function App() {
 
   //候选人信息
   const [candidatesData, setCandidatesData] = useState([]);
+
+  //ai对话功能
+  // AI Chat相关状态
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const PREDEFINED_ADDRESSES = [
     // 确保每个地址已经是校验和格式
@@ -603,6 +610,51 @@ function App() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    // 添加用户消息
+    const userMessage = {
+      text: inputMessage,
+      sender: "user",
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
+    setIsLoading(true);
+
+    try {
+      // 调用后端API（示例）
+      const response = await fetch("http://localhost:3001/api/ai-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: inputMessage }),
+      });
+
+      if (!response.ok) throw new Error("请求失败");
+
+      const data = await response.json();
+
+      const aiMessage = {
+        text: data.reply,
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      const errorMessage = {
+        text: "暂时无法连接到AI服务，请稍后再试",
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const ContractManager = () => {
     const [showManager, setShowManager] = useState(false);
 
@@ -714,6 +766,82 @@ function App() {
             </div>
           </div>
         )}
+      </div>
+    );
+  };
+
+  const ChatWidget = ({
+    open,
+    onClose,
+    messages,
+    inputMessage,
+    setInputMessage,
+    isLoading,
+    handleSend,
+  }) => {
+    const messagesEndRef = useRef(null);
+    const inputRef = useRef(null); // 新增ref
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+    useEffect(() => {
+      scrollToBottom();
+      // 新增自动聚焦逻辑
+      if (open && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, [messages, open]); // 依赖项中添加open
+    // 新增输入框聚焦处理
+    useEffect(() => {
+      if (open) {
+        const timer = setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [open, messages]);
+
+    return (
+      <div className={`chat-widget ${open ? "open" : ""}`}>
+        <div className="chat-header">
+          <h3>🤖 投票助手</h3>
+          <button onClick={onClose} className="close-btn">
+            ×
+          </button>
+        </div>
+
+        <div className="chat-messages">
+          {messages.map((msg, i) => (
+            <div key={i} className={`message ${msg.sender}`}>
+              <div className="message-bubble">
+                {msg.text}
+                <span className="timestamp">{msg.timestamp}</span>
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="message ai">
+              <div className="message-bubble">
+                <ClipLoader size={12} color="#666" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="chat-input">
+          <input
+            ref={inputRef} // 添加ref引用
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="输入您的问题..."
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+          />
+          <button onClick={handleSend} disabled={isLoading}>
+            {isLoading ? <ClipLoader size={16} /> : "发送"}
+          </button>
+        </div>
       </div>
     );
   };
@@ -927,6 +1055,24 @@ function App() {
                     <p>⚠️ 请先连接智能合约以进行投票</p>
                   </div>
                 )}
+
+                <ChatWidget
+                  open={chatOpen}
+                  onClose={() => setChatOpen(false)}
+                  messages={messages}
+                  inputMessage={inputMessage}
+                  setInputMessage={setInputMessage}
+                  isLoading={isLoading}
+                  handleSend={handleSendMessage}
+                />
+
+                {/* 悬浮按钮 */}
+                <button
+                  className="chat-toggle-btn"
+                  onClick={() => setChatOpen(!chatOpen)}
+                >
+                  {chatOpen ? "×" : "💬"}
+                </button>
 
                 {/* 管理员面板 */}
                 {isAdmin() && (

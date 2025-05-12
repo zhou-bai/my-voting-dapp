@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const { VotingCrypto } = require("./ElGamal");
 const { encrypt, decrypt } = require("./secureStorage");
+const axios = require("axios");
 
 const app = express();
 app.use(cors());
@@ -63,7 +64,7 @@ app.post("/api/keys/init", async (req, res) => {
 
     // 显式验证密钥有效性
     console.log("生成私钥");
-    console.log("使用的加密密钥:", process.env.KEY_ENCRYPTION_SECRET);
+    //console.log("使用的加密密钥:", process.env.KEY_ENCRYPTION_SECRET);
 
     const encryptedPrivKey = encrypt(
       keyPair.privateKey.toString(), // 确保转换为字符串
@@ -105,7 +106,7 @@ app.post("/api/decrypt", async (req, res) => {
       secureKeyStorage.encryptedPrivateKey,
       process.env.KEY_ENCRYPTION_SECRET
     );
-    console.log("使用的私钥:", privateKey);
+    //console.log("使用的私钥:", privateKey);
 
     // 执行解密
     const crypto = new VotingCrypto(CRYPTO_PARAMS.p, CRYPTO_PARAMS.g);
@@ -133,4 +134,73 @@ app.get("/api/public-key", (req, res) => {
 
 app.listen(3001, () => {
   console.log("Key Management Service running on port 3001");
+});
+
+// DeepSeek对话端点
+app.post("/api/ai-chat", async (req, res) => {
+  try {
+    // 验证请求数据
+    if (!req.body.message || typeof req.body.message !== "string") {
+      return res.status(400).json({ error: "无效的请求格式" });
+    }
+
+    // 验证API密钥
+    if (!process.env.DEEPSEEK_API_KEY) {
+      throw new Error("未配置DeepSeek API密钥");
+    }
+
+    // 构建消息历史（支持多轮对话）
+    const messages = [
+      {
+        role: "system",
+        content: `你是一个专业的区块链投票系统助手，具备以下知识：
+        1. 熟悉零知识证明和ElGamal加密机制
+        2. 精通智能合约开发和权限管理
+        3. 能用简洁的中文回答技术问题`,
+      },
+      {
+        role: "user",
+        content: req.body.message,
+      },
+    ];
+
+    // 调用DeepSeek API
+    const response = await axios.post(
+      "https://api.deepseek.com/v1/chat/completions",
+      {
+        model: "deepseek-chat",
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 500,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        },
+        timeout: 10000, // 10秒超时
+      }
+    );
+
+    // 提取有效回复
+    const aiReply = response.data.choices[0].message.content;
+
+    // 记录日志（生产环境需调整日志级别）
+    console.log("[AI对话] 用户问题:", req.body.message);
+    console.log("[AI回复]", aiReply);
+
+    res.json({ reply: aiReply });
+  } catch (error) {
+    console.error("AI对话错误:", error.response?.data || error.message);
+
+    const statusCode = error.response?.status || 500;
+    const errorMessage =
+      error.response?.data?.error?.message ||
+      (statusCode === 401 ? "无效的API密钥" : "AI服务暂时不可用");
+
+    res.status(statusCode).json({
+      error: errorMessage,
+      code: statusCode,
+    });
+  }
 });
