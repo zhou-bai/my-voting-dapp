@@ -171,14 +171,14 @@ app.post("/api/ai-chat", async (req, res) => {
         model: "deepseek-chat",
         messages: messages,
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 5000,
       },
       {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
         },
-        timeout: 10000, // 10秒超时
+        timeout: 50000, // 50秒超时
       }
     );
 

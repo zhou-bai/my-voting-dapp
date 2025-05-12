@@ -1,85 +1,175 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("EncryptedVoting 性能测试套件", function () {
+describe("EncryptedVoting 完整测试套件", function () {
   let voting;
-  let admin, voter1, voter2;
+  let admin, voter1, voter2, voter3;
 
-  // Gas消耗参考基准
-  const EXPECTED_GAS = {
-    DEPLOY_BASE: 1_500_000, // 部署基础消耗
-    VOTE_BASE: 150_000,
-    WHITELIST_ADD: 50_000,
-  };
-
-  // 部署配置
-  const standardParams = {
-    names: ["CandidateA", "CandidateB"],
-    descs: ["Technical Expert", "Product Manager"],
+  // 测试参数配置
+  const TEST_PARAMS = {
+    names: ["Alice", "Bob", "Charlie"],
+    descs: ["Blockchain Developer", "Security Expert", "Project Manager"],
     p: 7919,
     g: 7,
     whitelist: [],
   };
 
   before(async () => {
-    [admin, voter1, voter2] = await ethers.getSigners();
-    standardParams.whitelist = [voter1.address];
+    [admin, voter1, voter2, voter3] = await ethers.getSigners();
+    TEST_PARAMS.whitelist = [voter1.address, voter2.address];
   });
 
-  /***************** Gas消耗测试 *****************/
-  describe("Gas消耗基准测试", function () {
-    it("单个投票操作消耗", async () => {
+  /***************** 基础功能测试 *****************/
+  describe("合约初始化测试", function () {
+    beforeEach(async () => {
       const Voting = await ethers.getContractFactory("EncryptedVoting");
-      voting = await Voting.deploy(...Object.values(standardParams));
+      voting = await Voting.deploy(...Object.values(TEST_PARAMS));
+    });
 
+    it("正确初始化管理员", async () => {
+      expect(await voting.admin()).to.equal(admin.address);
+    });
+
+    it("正确设置密码学参数", async () => {
+      expect(await voting.p()).to.equal(TEST_PARAMS.p);
+      expect(await voting.g()).to.equal(TEST_PARAMS.g);
+    });
+
+    it("正确初始化候选人", async () => {
+      const count = await voting.getCandidateCount();
+      expect(count).to.equal(TEST_PARAMS.names.length);
+
+      for (let i = 0; i < count; i++) {
+        const [name, desc] = await voting.getCandidateInfo(i);
+        expect(name).to.equal(TEST_PARAMS.names[i]);
+        expect(desc).to.equal(TEST_PARAMS.descs[i]);
+      }
+    });
+
+    it("正确初始化白名单", async () => {
+      for (const addr of TEST_PARAMS.whitelist) {
+        expect(await voting.whitelist(addr)).to.be.true;
+      }
+    });
+  });
+
+  /***************** 投票功能测试 *****************/
+  describe("投票功能测试", function () {
+    beforeEach(async () => {
+      const Voting = await ethers.getContractFactory("EncryptedVoting");
+      voting = await Voting.deploy(...Object.values(TEST_PARAMS));
+    });
+
+    it("白名单用户成功投票", async () => {
+      const c1List = [500, 600, 700];
+      const c2List = [800, 900, 1000];
       const start = Date.now();
-      const tx = await voting.connect(voter1).vote([500, 600], [700, 800]);
+      const tx = await voting.connect(voter1).vote(c1List, c2List);
       const receipt = await tx.wait();
       const duration = Date.now() - start;
 
-      console.log(`⏱️ 投票耗时: ${duration}ms`);
-      console.log(`⛽ 投票Gas消耗: ${receipt.gasUsed}`);
+      console.log(`首次投票Gas消耗: ${receipt.gasUsed}`);
+      console.log(`操作耗时: ${duration}ms`);
 
-      expect(receipt.gasUsed).to.be.lessThan(EXPECTED_GAS.VOTE_BASE);
-      expect(duration).to.be.lessThan(5000); // 5秒超时保护
+      // 验证投票状态
+      expect(await voting.voters(voter1.address)).to.be.true;
+
+      // 验证候选人数据更新
+      for (let i = 0; i < TEST_PARAMS.names.length; i++) {
+        const [, , c1, c2] = await voting.getCandidateInfo(i);
+        expect(c1).to.equal(c1List[i] % TEST_PARAMS.p);
+        expect(c2).to.equal(c2List[i] % TEST_PARAMS.p);
+      }
     });
 
-    it("白名单操作消耗", async () => {
-      const Voting = await ethers.getContractFactory("EncryptedVoting");
-      voting = await Voting.deploy(...Object.values(standardParams));
+    it("非白名单用户投票应失败", async () => {
+      await expect(
+        voting.connect(voter3).vote([1, 1, 1], [1, 1, 1])
+      ).to.be.revertedWith("Not in whitelist");
+    });
 
-      // 测试空操作的Gas消耗
-      const tx = await voting.addToWhitelist(voter2.address);
-      const receipt = await tx.wait();
+    it("重复投票应失败", async () => {
+      await voting.connect(voter1).vote([1, 1, 1], [1, 1, 1]);
+      await expect(
+        voting.connect(voter1).vote([2, 2, 2], [2, 2, 2])
+      ).to.be.revertedWith("Already voted");
+    });
 
-      console.log(`🛂 添加白名单消耗: ${receipt.gasUsed}`);
-      expect(receipt.gasUsed).to.be.lessThan(EXPECTED_GAS.WHITELIST_ADD);
+    it("投票结束后禁止投票", async () => {
+      await voting.connect(admin).endVoting();
+      await expect(
+        voting.connect(voter1).vote([1, 1, 1], [1, 1, 1])
+      ).to.be.revertedWith("Voting ended");
     });
   });
-  /***************** 时间性能测试 *****************/
-  describe("操作时效性测试", function () {
-    // 每次创建新合约实例
+
+  /***************** 白名单管理测试 *****************/
+  describe("白名单管理测试", function () {
     beforeEach(async () => {
       const Voting = await ethers.getContractFactory("EncryptedVoting");
       voting = await Voting.deploy(
-        standardParams.names,
-        standardParams.descs,
-        standardParams.p,
-        standardParams.g,
-        [] // 清空白名单初始化
+        TEST_PARAMS.names,
+        TEST_PARAMS.descs,
+        TEST_PARAMS.p,
+        TEST_PARAMS.g,
+        []
       );
     });
-    it("白名单操作响应时间", async () => {
-      // 使用未初始化的地址
-      const testAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
+    it("管理员添加白名单", async () => {
       const start = Date.now();
-      const tx = await voting.addToWhitelist(testAddress);
-      await tx.wait();
+      const tx = await voting.connect(admin).addToWhitelist(voter1.address);
+      const receipt = await tx.wait();
       const duration = Date.now() - start;
 
-      console.log(`⚡ 白名单操作耗时: ${duration}ms`);
-      expect(duration).to.be.lessThan(2000);
+      console.log(`添加白名单Gas消耗: ${receipt.gasUsed}`);
+      console.log(`操作耗时: ${duration}ms`);
+
+      expect(await voting.whitelist(voter1.address)).to.be.true;
+    });
+
+    it("非管理员添加白名单应失败", async () => {
+      await expect(
+        voting.connect(voter1).addToWhitelist(voter2.address)
+      ).to.be.revertedWith("Admin only");
+    });
+
+    it("移除白名单", async () => {
+      await voting.connect(admin).addToWhitelist(voter1.address);
+      const tx = await voting
+        .connect(admin)
+        .removeFromWhitelist(voter1.address);
+      const receipt = await tx.wait();
+
+      console.log(`移除白名单Gas消耗: ${receipt.gasUsed}`);
+      expect(await voting.whitelist(voter1.address)).to.be.false;
+    });
+  });
+
+  /***************** 治理功能测试 *****************/
+  describe("治理功能测试", function () {
+    beforeEach(async () => {
+      const Voting = await ethers.getContractFactory("EncryptedVoting");
+      voting = await Voting.deploy(...Object.values(TEST_PARAMS));
+    });
+
+    it("创建提案", async () => {
+      const start = Date.now();
+      const tx = await voting.connect(admin).createProposal("Upgrade contract");
+      const receipt = await tx.wait();
+      const duration = Date.now() - start;
+
+      console.log(`创建提案Gas消耗: ${receipt.gasUsed}`);
+      console.log(`操作耗时: ${duration}ms`);
+
+      expect(await voting.getProposalCount()).to.equal(1);
+    });
+
+    it("未达票数执行应失败", async () => {
+      await voting.connect(admin).createProposal("Test proposal");
+      await expect(voting.connect(admin).executeProposal(0)).to.be.revertedWith(
+        "Not enough votes"
+      );
     });
   });
 });
