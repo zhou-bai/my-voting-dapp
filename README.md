@@ -1,4 +1,4 @@
-# 目前已经完善后端密钥存储
+# 项目目前基本完善
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
@@ -9,10 +9,6 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ### `npx hardhat node`
 
 启动 hardhat 虚拟链，本地运行。
-
-### `npx hardhat run scripts/deploy.js --network localhost`
-
-运行脚本文件夹中的部署脚本，将智能合约部署到区块链上。
 
 ### `npm start`
 
@@ -30,7 +26,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ### `Invoke-WebRequest -Uri "http://localhost:3001/api/keys/init" -Method Post`
 
-init 进行密钥初始化，生成公钥和私钥
+init 进行密钥初始化
 
 ### `Invoke-WebRequest -Uri "http://localhost:3001/api/keys/test" -Method Post`
 
